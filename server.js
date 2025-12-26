@@ -280,7 +280,8 @@ app.get('/', (req, res) => {
         endpoints: {
             purchase: '/purchase',
             generateKey: '/generate-key',
-            webhook: '/webhook/paypal'
+            webhookIPN: '/webhook/paypal',
+            webhookV2: '/webhook/paypal-v2'  // ← THÊM DÒNG NÀY
         }
     });
 });
@@ -290,30 +291,164 @@ app.get('/purchase', (req, res) => {
     res.sendFile(path.join(__dirname, 'purchase.html'));
 });
 
-// Endpoint nhận webhook từ PayPal
+// Endpoint nhận webhook từ PayPal (hỗ trợ cả IPN và Webhooks mới)
 app.post('/webhook/paypal', async (req, res) => {
     try {
-        console.log('📨 Received PayPal webhook:', JSON.stringify(req.body, null, 2));
+        console.log('📨 Received PayPal notification:', JSON.stringify(req.body, null, 2));
         
-        // Xác thực PayPal IPN (quan trọng cho bảo mật)
-        const isValid = await verifyPayPalIPN(req.body);
-        if (!isValid) {
-            console.error('❌ Invalid PayPal IPN');
-            return res.status(400).send('Invalid IPN');
+        let buyerEmail, amount, packageInfo;
+        
+        // Kiểm tra xem là IPN hay Webhook mới
+        if (req.body.event_type) {
+            // ========== WEBHOOKS FORMAT (MỚI) ==========
+            console.log('📡 Processing as PayPal Webhook v2');
+            
+            const eventType = req.body.event_type;
+            
+            // Chỉ xử lý các event liên quan đến payment completed
+            const validEvents = [
+                'PAYMENT.CAPTURE.COMPLETED',
+                'PAYMENT.SALE.COMPLETED',
+                'CHECKOUT.ORDER.COMPLETED'
+            ];
+            
+            if (!validEvents.includes(eventType)) {
+                console.log(`⏸️ Event type ${eventType} not handled`);
+                return res.status(200).send('Event type not handled');
+            }
+            
+            // Lấy thông tin từ webhook payload
+            if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+                const resource = req.body.resource;
+                buyerEmail = resource.payer?.email_address || resource.payer?.payer_info?.email;
+                amount = parseFloat(resource.amount?.value || 0);
+            }
+            else if (eventType === 'PAYMENT.SALE.COMPLETED') {
+                const resource = req.body.resource;
+                buyerEmail = resource.payer?.payer_info?.email;
+                amount = parseFloat(resource.amount?.total || 0);
+            }
+            else if (eventType === 'CHECKOUT.ORDER.COMPLETED') {
+                const resource = req.body.resource;
+                buyerEmail = resource.payer?.email_address;
+                amount = parseFloat(resource.purchase_units?.[0]?.amount?.value || 0);
+            }
+            
+            console.log(`💳 Webhook Info: Event=${eventType}, Amount=$${amount}, Email=${buyerEmail}`);
+            
+        } else if (req.body.payment_status) {
+            // ========== IPN FORMAT (CŨ) ==========
+            console.log('📡 Processing as PayPal IPN');
+            
+            // Xác thực PayPal IPN
+            const isValid = await verifyPayPalIPN(req.body);
+            if (!isValid) {
+                console.error('❌ Invalid PayPal IPN');
+                return res.status(400).send('Invalid IPN');
+            }
+            
+            const paymentStatus = req.body.payment_status;
+            
+            if (paymentStatus !== 'Completed') {
+                console.log(`⏸️ Payment status is ${paymentStatus}, not processing`);
+                return res.status(200).send('Payment not completed');
+            }
+            
+            amount = parseFloat(req.body.mc_gross);
+            buyerEmail = req.body.payer_email;
+            
+            console.log(`💳 IPN Info: Status=${paymentStatus}, Amount=$${amount}, Email=${buyerEmail}`);
+            
+        } else {
+            console.error('❌ Unknown payload format');
+            return res.status(400).send('Unknown payload format');
         }
         
-        // Lấy thông tin từ PayPal
-        const paymentStatus = req.body.payment_status;
-        const amount = parseFloat(req.body.mc_gross);
-        const buyerEmail = req.body.payer_email;
-        const txnId = req.body.txn_id;
+        // ========== XỬ LÝ CHUNG CHO CẢ IPN VÀ WEBHOOKS ==========
         
-        console.log(`💳 Payment Info: Status=${paymentStatus}, Amount=$${amount}, Email=${buyerEmail}, TxnID=${txnId}`);
+        if (!buyerEmail || !amount) {
+            console.error('❌ Missing email or amount');
+            return res.status(400).send('Missing required data');
+        }
         
-        // Chỉ xử lý khi thanh toán hoàn tất
-        if (paymentStatus !== 'Completed') {
-            console.log(`⏸️ Payment status is ${paymentStatus}, not processing`);
-            return res.status(200).send('Payment not completed');
+        // Xác định gói license dựa trên số tiền
+        packageInfo = null;
+        for (const [price, info] of Object.entries(LICENSE_PACKAGES)) {
+            if (Math.abs(amount - parseFloat(price)) < 0.01) {
+                packageInfo = info;
+                break;
+            }
+        }
+        
+        if (!packageInfo) {
+            console.error(`❌ Unknown amount: $${amount}`);
+            return res.status(400).send('Unknown amount');
+        }
+        
+        console.log(`📦 Package: ${packageInfo.name} (${packageInfo.days} days)`);
+        
+        // Tạo license key
+        const licenseKey = generateLicenseKey(packageInfo.days);
+        console.log(`🔑 Generated license key: ${licenseKey}`);
+        
+        // Gửi email
+        await sendLicenseEmail(buyerEmail, licenseKey, packageInfo.days, amount, packageInfo.name);
+        console.log(`✅ Notification processed successfully`);
+        
+        res.status(200).send('OK');
+        
+    } catch (error) {
+        console.error('❌ Error processing notification:', error);
+        res.status(500).send('Internal server error');
+    }
+});
+// Endpoint nhận PayPal Webhooks (mới - hiện đại hơn IPN)
+app.post('/webhook/paypal-v2', async (req, res) => {
+    try {
+        console.log('📨 Received PayPal Webhook v2:', JSON.stringify(req.body, null, 2));
+        
+        // Lấy event type
+        const eventType = req.body.event_type;
+        
+        // Chỉ xử lý các event liên quan đến payment completed
+        const validEvents = [
+            'PAYMENT.CAPTURE.COMPLETED',
+            'PAYMENT.SALE.COMPLETED',
+            'CHECKOUT.ORDER.COMPLETED'
+        ];
+        
+        if (!validEvents.includes(eventType)) {
+            console.log(`⏸️ Event type ${eventType} not handled`);
+            return res.status(200).send('Event type not handled');
+        }
+        
+        // Lấy thông tin từ webhook payload
+        let buyerEmail, amount;
+        
+        // PAYMENT.CAPTURE.COMPLETED format
+        if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+            const resource = req.body.resource;
+            buyerEmail = resource.payer?.email_address || resource.payer?.payer_info?.email;
+            amount = parseFloat(resource.amount?.value || 0);
+        }
+        // PAYMENT.SALE.COMPLETED format
+        else if (eventType === 'PAYMENT.SALE.COMPLETED') {
+            const resource = req.body.resource;
+            buyerEmail = resource.payer?.payer_info?.email;
+            amount = parseFloat(resource.amount?.total || 0);
+        }
+        // CHECKOUT.ORDER.COMPLETED format
+        else if (eventType === 'CHECKOUT.ORDER.COMPLETED') {
+            const resource = req.body.resource;
+            buyerEmail = resource.payer?.email_address;
+            amount = parseFloat(resource.purchase_units?.[0]?.amount?.value || 0);
+        }
+        
+        console.log(`💳 Webhook Info: Event=${eventType}, Amount=$${amount}, Email=${buyerEmail}`);
+        
+        if (!buyerEmail || !amount) {
+            console.error('❌ Missing email or amount in webhook');
+            return res.status(400).send('Missing required data');
         }
         
         // Xác định gói license dựa trên số tiền
@@ -338,7 +473,7 @@ app.post('/webhook/paypal', async (req, res) => {
         
         // Gửi email
         await sendLicenseEmail(buyerEmail, licenseKey, packageInfo.days, amount, packageInfo.name);
-        console.log(`✅ Transaction ${txnId} processed successfully`);
+        console.log(`✅ Webhook processed successfully`);
         
         res.status(200).send('OK');
         
