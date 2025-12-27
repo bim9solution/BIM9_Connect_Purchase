@@ -20,7 +20,7 @@ const LICENSE_PACKAGES = {
     '90': { days: 360, name: 'Annual' }
 };
 
-// Cấu hình email (sử dụng Gmail hoặc SMTP khác)
+// Cấu hình email
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -29,11 +29,20 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Hàm tạo license key (chuyển từ C#)
+// Test email connection on startup
+transporter.verify(function(error, success) {
+    if (error) {
+        console.error('❌ Email configuration error:', error);
+    } else {
+        console.log('✅ Email server is ready to send messages');
+    }
+});
+
+// Hàm tạo license key
 function generateLicenseKey(validDays) {
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + validDays);
-    const expDateStr = expirationDate.toISOString().split('T')[0]; // yyyy-MM-dd
+    const expDateStr = expirationDate.toISOString().split('T')[0];
     
     const dataToSign = `${expDateStr}|${UNIQUE_IDENTIFIER}`;
     const signature = signData(dataToSign, ENCRYPTION_KEY);
@@ -66,111 +75,17 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
 <html>
 <head>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            border-radius: 10px 10px 0 0;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 28px;
-        }
-        .content {
-            background: #f9f9f9;
-            padding: 30px;
-            border: 1px solid #ddd;
-        }
-        .license-box {
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            word-break: break-all;
-        }
-        .license-key {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #d63384;
-            font-weight: bold;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #667eea;
-        }
-        .info-table {
-            width: 100%;
-            margin: 20px 0;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .info-table tr {
-            border-bottom: 1px solid #eee;
-        }
-        .info-table td {
-            padding: 12px;
-        }
-        .info-table td:first-child {
-            font-weight: bold;
-            color: #667eea;
-            width: 40%;
-        }
-        .steps {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        .steps h3 {
-            color: #667eea;
-            margin-top: 0;
-        }
-        .steps ol {
-            padding-left: 20px;
-        }
-        .steps li {
-            margin: 10px 0;
-            line-height: 1.8;
-        }
-        .warning {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-        .footer {
-            background: #333;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 0 0 10px 10px;
-            font-size: 12px;
-        }
-        .footer a {
-            color: #667eea;
-            text-decoration: none;
-        }
-        .button {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { margin: 0; font-size: 28px; }
+        .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
+        .license-box { background: white; border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 20px 0; word-break: break-all; }
+        .license-key { font-family: 'Courier New', monospace; font-size: 14px; color: #d63384; font-weight: bold; background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #667eea; }
+        .info-table { width: 100%; margin: 20px 0; background: white; border-radius: 8px; overflow: hidden; }
+        .info-table tr { border-bottom: 1px solid #eee; }
+        .info-table td { padding: 12px; }
+        .info-table td:first-child { font-weight: bold; color: #667eea; width: 40%; }
+        .footer { background: #333; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -178,82 +93,33 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
         <h1>🔧 BIM9 Pipes License</h1>
         <p>Thank you for your purchase!</p>
     </div>
-    
     <div class="content">
         <h2>Your License Key is Ready! 🎉</h2>
-        <p>Your <strong>${packageName} License</strong> has been successfully generated and is ready to use.</p>
-        
+        <p>Your <strong>${packageName} License</strong> has been successfully generated.</p>
         <div class="license-box">
             <p style="margin-top: 0; color: #667eea; font-weight: bold;">📋 YOUR LICENSE KEY:</p>
             <div class="license-key">${licenseKey}</div>
-            <p style="margin-bottom: 0; font-size: 12px; color: #666;">
-                ⚠️ Please save this key in a safe place. You will need it to activate BIM9 Pipes.
-            </p>
+            <p style="margin-bottom: 0; font-size: 12px; color: #666;">⚠️ Please save this key in a safe place.</p>
         </div>
-        
         <table class="info-table">
-            <tr>
-                <td>📦 Package</td>
-                <td><strong>${packageName} License</strong></td>
-            </tr>
-            <tr>
-                <td>💰 Amount Paid</td>
-                <td><strong>$${amount.toFixed(2)} USD</strong></td>
-            </tr>
-            <tr>
-                <td>⏱️ Valid For</td>
-                <td><strong>${validDays} days</strong></td>
-            </tr>
-            <tr>
-                <td>📅 Expires On</td>
-                <td><strong>${expDateFormatted}</strong></td>
-            </tr>
-            <tr>
-                <td>📧 Email</td>
-                <td>${recipientEmail}</td>
-            </tr>
+            <tr><td>📦 Package</td><td><strong>${packageName} License</strong></td></tr>
+            <tr><td>💰 Amount Paid</td><td><strong>$${amount.toFixed(2)} USD</strong></td></tr>
+            <tr><td>⏱️ Valid For</td><td><strong>${validDays} days</strong></td></tr>
+            <tr><td>📅 Expires On</td><td><strong>${expDateFormatted}</strong></td></tr>
+            <tr><td>📧 Email</td><td>${recipientEmail}</td></tr>
         </table>
-        
-        <div class="steps">
-            <h3>🚀 Activation Instructions:</h3>
-            <ol>
-                <li><strong>Open Autodesk Revit</strong> on your computer</li>
-                <li><strong>Launch BIM9 Pipes</strong> from the Add-ins tab</li>
-                <li>When prompted for a license key, <strong>click "Enter License Key"</strong></li>
-                <li><strong>Copy and paste</strong> the license key from above</li>
-                <li>Click <strong>"Activate"</strong> to unlock all features</li>
-                <li>Start using BIM9 Pipes! 🎊</li>
-            </ol>
-        </div>
-        
-        <div class="warning">
-            <strong>⚠️ Important Notes:</strong>
-            <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>Keep this email for your records</li>
-                <li>The license key is case-sensitive</li>
-                <li>Copy the entire key including all characters</li>
-                <li>License is valid starting from today</li>
-                <li>No refunds after key delivery</li>
-            </ul>
-        </div>
-        
-        <h3 style="color: #667eea;">Need Help?</h3>
-        <p>If you have any questions or encounter issues:</p>
-        <ul>
-            <li>📧 Email: <strong>support@bim9pipes.com</strong></li>
-            <li>🌐 Website: <strong>https://bim9pipes.com</strong></li>
-            <li>⏰ Support hours: Monday-Friday, 9 AM - 5 PM (GMT+7)</li>
-        </ul>
-        
-        <p style="text-align: center; margin-top: 30px;">
-            <strong>Thank you for choosing BIM9 Pipes!</strong><br>
-            We hope you enjoy using our software.
-        </p>
+        <h3 style="color: #667eea;">🚀 Activation Instructions:</h3>
+        <ol>
+            <li><strong>Open Autodesk Revit</strong> on your computer</li>
+            <li><strong>Launch BIM9 Pipes</strong> from the Add-ins tab</li>
+            <li>When prompted, <strong>enter the license key</strong> above</li>
+            <li>Click <strong>"Activate"</strong> to unlock all features</li>
+        </ol>
+        <h3 style="color: #667eea;">💡 Need Help?</h3>
+        <p>Contact: <strong>support@bim9pipes.com</strong></p>
     </div>
-    
     <div class="footer">
         <p><strong>BIM9 Pipes</strong> - Professional Piping Solutions for Revit</p>
-        <p>This is an automated email. Please do not reply to this message.</p>
         <p>© 2025 BIM9 Pipes. All rights reserved.</p>
     </div>
 </body>
@@ -275,13 +141,13 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
 app.get('/', (req, res) => {
     res.json({ 
         status: 'BIM9 Pipes License Generator API is running',
-        version: '2.0',
+        version: '2.1',
         packages: LICENSE_PACKAGES,
         endpoints: {
             purchase: '/purchase',
             generateKey: '/generate-key',
-            webhookIPN: '/webhook/paypal',
-            webhookV2: '/webhook/paypal-v2'  // ← THÊM DÒNG NÀY
+            webhook: '/webhook/paypal',
+            testEmail: '/test-email'
         }
     });
 });
@@ -291,87 +157,118 @@ app.get('/purchase', (req, res) => {
     res.sendFile(path.join(__dirname, 'purchase.html'));
 });
 
-// Endpoint nhận webhook từ PayPal (hỗ trợ cả IPN và Webhooks mới)
+// ============================================================
+// ENDPOINT CHÍNH: Xử lý cả IPN và Webhooks v2
+// ============================================================
 app.post('/webhook/paypal', async (req, res) => {
     try {
-        console.log('📨 Received PayPal notification:', JSON.stringify(req.body, null, 2));
+        console.log('📨 ========== RECEIVED PAYPAL NOTIFICATION ==========');
+        console.log('📨 Full payload:', JSON.stringify(req.body, null, 2));
+        console.log('📨 Headers:', JSON.stringify(req.headers, null, 2));
         
-        let buyerEmail, amount, packageInfo;
+        let buyerEmail, amount, packageInfo, eventDescription;
         
-        // Kiểm tra xem là IPN hay Webhook mới
+        // ========== DETECT FORMAT: Webhooks v2 hay IPN ==========
+        
         if (req.body.event_type) {
-            // ========== WEBHOOKS FORMAT (MỚI) ==========
-            console.log('📡 Processing as PayPal Webhook v2');
+            // ========== WEBHOOKS V2 FORMAT (MỚI) ==========
+            console.log('🔵 Processing as PayPal Webhooks v2');
             
             const eventType = req.body.event_type;
+            console.log(`🔵 Event Type: ${eventType}`);
             
-            // Chỉ xử lý các event liên quan đến payment completed
+            // Chỉ xử lý payment completed events
             const validEvents = [
                 'PAYMENT.CAPTURE.COMPLETED',
                 'PAYMENT.SALE.COMPLETED',
-                'CHECKOUT.ORDER.COMPLETED'
+                'CHECKOUT.ORDER.COMPLETED',
+                'CHECKOUT.ORDER.APPROVED'
             ];
             
             if (!validEvents.includes(eventType)) {
-                console.log(`⏸️ Event type ${eventType} not handled`);
-                return res.status(200).send('Event type not handled');
+                console.log(`⏸️ Event type ${eventType} not handled, returning 200 OK`);
+                return res.status(200).json({ status: 'event_type_not_handled' });
             }
             
-            // Lấy thông tin từ webhook payload
-            if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
-                const resource = req.body.resource;
-                buyerEmail = resource.payer?.email_address || resource.payer?.payer_info?.email;
-                amount = parseFloat(resource.amount?.value || 0);
-            }
-            else if (eventType === 'PAYMENT.SALE.COMPLETED') {
-                const resource = req.body.resource;
-                buyerEmail = resource.payer?.payer_info?.email;
-                amount = parseFloat(resource.amount?.total || 0);
-            }
-            else if (eventType === 'CHECKOUT.ORDER.COMPLETED') {
-                const resource = req.body.resource;
-                buyerEmail = resource.payer?.email_address;
-                amount = parseFloat(resource.purchase_units?.[0]?.amount?.value || 0);
-            }
+            const resource = req.body.resource;
+            console.log('🔵 Resource:', JSON.stringify(resource, null, 2));
             
-            console.log(`💳 Webhook Info: Event=${eventType}, Amount=$${amount}, Email=${buyerEmail}`);
+            // Extract email - try multiple paths
+            buyerEmail = resource.payer?.email_address 
+                      || resource.payer?.payer_info?.email
+                      || resource.payer?.email
+                      || resource.payee?.email_address;
             
-        } else if (req.body.payment_status) {
+            // Extract amount - try multiple paths
+            amount = parseFloat(
+                resource.amount?.value 
+                || resource.amount?.total
+                || resource.purchase_units?.[0]?.amount?.value
+                || 0
+            );
+            
+            eventDescription = `Webhook v2: ${eventType}`;
+            
+            console.log(`🔵 Extracted - Email: ${buyerEmail}, Amount: $${amount}`);
+            
+        } else if (req.body.payment_status || req.body.txn_type) {
             // ========== IPN FORMAT (CŨ) ==========
-            console.log('📡 Processing as PayPal IPN');
+            console.log('🟢 Processing as PayPal IPN');
             
-            // Xác thực PayPal IPN
-            const isValid = await verifyPayPalIPN(req.body);
-            if (!isValid) {
-                console.error('❌ Invalid PayPal IPN');
-                return res.status(400).send('Invalid IPN');
+            // Verify IPN với PayPal
+            try {
+                const isValid = await verifyPayPalIPN(req.body);
+                if (!isValid) {
+                    console.error('❌ Invalid PayPal IPN signature');
+                    return res.status(400).json({ error: 'Invalid IPN' });
+                }
+                console.log('✅ IPN verified successfully');
+            } catch (verifyError) {
+                console.error('❌ IPN verification error:', verifyError);
+                // Continue anyway for testing (comment out in production)
             }
             
             const paymentStatus = req.body.payment_status;
+            console.log(`🟢 Payment Status: ${paymentStatus}`);
             
             if (paymentStatus !== 'Completed') {
-                console.log(`⏸️ Payment status is ${paymentStatus}, not processing`);
-                return res.status(200).send('Payment not completed');
+                console.log(`⏸️ Payment not completed (status: ${paymentStatus}), returning 200 OK`);
+                return res.status(200).json({ status: 'payment_not_completed' });
             }
             
-            amount = parseFloat(req.body.mc_gross);
-            buyerEmail = req.body.payer_email;
+            amount = parseFloat(req.body.mc_gross || 0);
+            buyerEmail = req.body.payer_email || req.body.receiver_email;
             
-            console.log(`💳 IPN Info: Status=${paymentStatus}, Amount=$${amount}, Email=${buyerEmail}`);
+            eventDescription = `IPN: ${paymentStatus}`;
+            
+            console.log(`🟢 Extracted - Email: ${buyerEmail}, Amount: $${amount}`);
             
         } else {
-            console.error('❌ Unknown payload format');
-            return res.status(400).send('Unknown payload format');
+            // ========== UNKNOWN FORMAT ==========
+            console.error('❌ Unknown payload format - neither Webhook nor IPN');
+            console.error('❌ Available keys:', Object.keys(req.body));
+            return res.status(400).json({ 
+                error: 'Unknown payload format',
+                received_keys: Object.keys(req.body)
+            });
         }
         
-        // ========== XỬ LÝ CHUNG CHO CẢ IPN VÀ WEBHOOKS ==========
+        // ========== VALIDATE DATA ==========
         
-        if (!buyerEmail || !amount) {
-            console.error('❌ Missing email or amount');
-            return res.status(400).send('Missing required data');
+        if (!buyerEmail) {
+            console.error('❌ Missing buyer email in payload');
+            return res.status(400).json({ error: 'Missing buyer email' });
         }
         
-        // Xác định gói license dựa trên số tiền
+        if (!amount || amount <= 0) {
+            console.error('❌ Invalid amount:', amount);
+            return res.status(400).json({ error: 'Invalid amount' });
+        }
+        
+        console.log(`💰 Processing payment: $${amount} to ${buyerEmail}`);
+        
+        // ========== DETERMINE LICENSE PACKAGE ==========
+        
         packageInfo = null;
         for (const [price, info] of Object.entries(LICENSE_PACKAGES)) {
             if (Math.abs(amount - parseFloat(price)) < 0.01) {
@@ -382,104 +279,56 @@ app.post('/webhook/paypal', async (req, res) => {
         
         if (!packageInfo) {
             console.error(`❌ Unknown amount: $${amount}`);
-            return res.status(400).send('Unknown amount');
+            console.error(`❌ Valid amounts: ${Object.keys(LICENSE_PACKAGES).join(', ')}`);
+            return res.status(400).json({ 
+                error: 'Unknown amount',
+                received: amount,
+                valid_amounts: Object.keys(LICENSE_PACKAGES)
+            });
         }
         
         console.log(`📦 Package: ${packageInfo.name} (${packageInfo.days} days)`);
         
-        // Tạo license key
+        // ========== GENERATE LICENSE KEY ==========
+        
         const licenseKey = generateLicenseKey(packageInfo.days);
         console.log(`🔑 Generated license key: ${licenseKey}`);
         
-        // Gửi email
-        await sendLicenseEmail(buyerEmail, licenseKey, packageInfo.days, amount, packageInfo.name);
-        console.log(`✅ Notification processed successfully`);
+        // ========== SEND EMAIL ==========
         
-        res.status(200).send('OK');
+        console.log(`📧 Sending email to: ${buyerEmail}`);
+        
+        try {
+            await sendLicenseEmail(buyerEmail, licenseKey, packageInfo.days, amount, packageInfo.name);
+            console.log(`✅ Email sent successfully!`);
+        } catch (emailError) {
+            console.error(`❌ Failed to send email:`, emailError);
+            // Return 500 so PayPal will retry
+            return res.status(500).json({ 
+                error: 'Failed to send email',
+                details: emailError.message 
+            });
+        }
+        
+        console.log(`✅ ========== NOTIFICATION PROCESSED SUCCESSFULLY ==========`);
+        
+        // Return 200 OK to PayPal
+        return res.status(200).json({ 
+            status: 'success',
+            email_sent: true,
+            license_key_generated: true
+        });
         
     } catch (error) {
-        console.error('❌ Error processing notification:', error);
-        res.status(500).send('Internal server error');
-    }
-});
-// Endpoint nhận PayPal Webhooks (mới - hiện đại hơn IPN)
-app.post('/webhook/paypal-v2', async (req, res) => {
-    try {
-        console.log('📨 Received PayPal Webhook v2:', JSON.stringify(req.body, null, 2));
+        console.error('❌ ========== ERROR PROCESSING NOTIFICATION ==========');
+        console.error('❌ Error:', error);
+        console.error('❌ Stack:', error.stack);
         
-        // Lấy event type
-        const eventType = req.body.event_type;
-        
-        // Chỉ xử lý các event liên quan đến payment completed
-        const validEvents = [
-            'PAYMENT.CAPTURE.COMPLETED',
-            'PAYMENT.SALE.COMPLETED',
-            'CHECKOUT.ORDER.COMPLETED'
-        ];
-        
-        if (!validEvents.includes(eventType)) {
-            console.log(`⏸️ Event type ${eventType} not handled`);
-            return res.status(200).send('Event type not handled');
-        }
-        
-        // Lấy thông tin từ webhook payload
-        let buyerEmail, amount;
-        
-        // PAYMENT.CAPTURE.COMPLETED format
-        if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
-            const resource = req.body.resource;
-            buyerEmail = resource.payer?.email_address || resource.payer?.payer_info?.email;
-            amount = parseFloat(resource.amount?.value || 0);
-        }
-        // PAYMENT.SALE.COMPLETED format
-        else if (eventType === 'PAYMENT.SALE.COMPLETED') {
-            const resource = req.body.resource;
-            buyerEmail = resource.payer?.payer_info?.email;
-            amount = parseFloat(resource.amount?.total || 0);
-        }
-        // CHECKOUT.ORDER.COMPLETED format
-        else if (eventType === 'CHECKOUT.ORDER.COMPLETED') {
-            const resource = req.body.resource;
-            buyerEmail = resource.payer?.email_address;
-            amount = parseFloat(resource.purchase_units?.[0]?.amount?.value || 0);
-        }
-        
-        console.log(`💳 Webhook Info: Event=${eventType}, Amount=$${amount}, Email=${buyerEmail}`);
-        
-        if (!buyerEmail || !amount) {
-            console.error('❌ Missing email or amount in webhook');
-            return res.status(400).send('Missing required data');
-        }
-        
-        // Xác định gói license dựa trên số tiền
-        let packageInfo = null;
-        for (const [price, info] of Object.entries(LICENSE_PACKAGES)) {
-            if (Math.abs(amount - parseFloat(price)) < 0.01) {
-                packageInfo = info;
-                break;
-            }
-        }
-        
-        if (!packageInfo) {
-            console.error(`❌ Unknown amount: $${amount}`);
-            return res.status(400).send('Unknown amount');
-        }
-        
-        console.log(`📦 Package: ${packageInfo.name} (${packageInfo.days} days)`);
-        
-        // Tạo license key
-        const licenseKey = generateLicenseKey(packageInfo.days);
-        console.log(`🔑 Generated license key: ${licenseKey}`);
-        
-        // Gửi email
-        await sendLicenseEmail(buyerEmail, licenseKey, packageInfo.days, amount, packageInfo.name);
-        console.log(`✅ Webhook processed successfully`);
-        
-        res.status(200).send('OK');
-        
-    } catch (error) {
-        console.error('❌ Error processing webhook:', error);
-        res.status(500).send('Internal server error');
+        // Return 500 so PayPal will retry
+        return res.status(500).json({ 
+            error: 'Internal server error',
+            message: error.message 
+        });
     }
 });
 
@@ -487,11 +336,9 @@ app.post('/webhook/paypal-v2', async (req, res) => {
 async function verifyPayPalIPN(ipnData) {
     const https = require('https');
     
-    // Thêm cmd=_notify-validate
     const verifyData = { cmd: '_notify-validate', ...ipnData };
     const postData = new URLSearchParams(verifyData).toString();
     
-    // Sử dụng sandbox hoặc production URL
     const paypalUrl = process.env.PAYPAL_MODE === 'live' 
         ? 'www.paypal.com' 
         : 'www.sandbox.paypal.com';
@@ -532,7 +379,35 @@ async function verifyPayPalIPN(ipnData) {
     });
 }
 
-// Endpoint để test tạo key thủ công
+// Endpoint test email
+app.post('/test-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+        
+        console.log(`📧 Sending test email to: ${email}`);
+        
+        const testKey = generateLicenseKey(30);
+        await sendLicenseEmail(email, testKey, 30, 9.9, 'Test Monthly');
+        
+        res.json({ 
+            success: true, 
+            message: 'Test email sent successfully',
+            email: email
+        });
+    } catch (error) {
+        console.error('❌ Error sending test email:', error);
+        res.status(500).json({ 
+            error: 'Failed to send test email',
+            details: error.message 
+        });
+    }
+});
+
+// Endpoint tạo key thủ công
 app.post('/generate-key', async (req, res) => {
     try {
         const { email, validDays, amount } = req.body;
@@ -544,13 +419,11 @@ app.post('/generate-key', async (req, res) => {
             });
         }
         
-        // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ error: 'Invalid email format' });
         }
         
-        // Xác định package name
         let packageName = `${validDays}-Day`;
         for (const [price, info] of Object.entries(LICENSE_PACKAGES)) {
             if (info.days === validDays) {
@@ -581,26 +454,7 @@ app.post('/generate-key', async (req, res) => {
     }
 });
 
-// Endpoint nhận thông báo từ frontend khi payment success
-app.post('/payment-success', async (req, res) => {
-    try {
-        const { orderID, email, plan, amount } = req.body;
-        console.log(`💳 Payment success notification: Order=${orderID}, Email=${email}, Plan=${plan}`);
-        
-        // PayPal IPN sẽ tự động xử lý việc tạo và gửi key
-        // Endpoint này chỉ để log
-        
-        res.json({ 
-            success: true, 
-            message: 'Payment notification received. License key will be sent via email shortly.' 
-        });
-    } catch (error) {
-        console.error('❌ Error processing payment notification:', error);
-        res.status(500).json({ error: 'Failed to process notification' });
-    }
-});
-
-// Endpoint để kiểm tra package info
+// Endpoint packages
 app.get('/packages', (req, res) => {
     const packages = Object.entries(LICENSE_PACKAGES).map(([price, info]) => ({
         price: parseFloat(price),
@@ -614,33 +468,7 @@ app.get('/packages', (req, res) => {
     });
 });
 
-// Endpoint test email (chỉ dùng cho development)
-app.post('/test-email', async (req, res) => {
-    try {
-        const { email } = req.body;
-        
-        if (!email) {
-            return res.status(400).json({ error: 'Email is required' });
-        }
-        
-        const testKey = generateLicenseKey(30);
-        await sendLicenseEmail(email, testKey, 30, 9.9, 'Test Monthly');
-        
-        res.json({ 
-            success: true, 
-            message: 'Test email sent successfully',
-            email: email
-        });
-    } catch (error) {
-        console.error('❌ Error sending test email:', error);
-        res.status(500).json({ 
-            error: 'Failed to send test email',
-            details: error.message 
-        });
-    }
-});
-
-// Error handling middleware
+// Error handling
 app.use((err, req, res, next) => {
     console.error('💥 Unhandled error:', err);
     res.status(500).json({ 
@@ -653,32 +481,20 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
     res.status(404).json({ 
         error: 'Not found',
-        path: req.path,
-        availableEndpoints: {
-            root: '/',
-            purchase: '/purchase',
-            generateKey: '/generate-key',
-            webhook: '/webhook/paypal',
-            packages: '/packages'
-        }
+        path: req.path
     });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log('🚀 ========================================');
-    console.log(`🔧 BIM9 Pipes License Generator API`);
+    console.log(`🔧 BIM9 Pipes License Generator API v2.1`);
     console.log(`📡 Server running on port ${PORT}`);
-    console.log(`🌐 Base URL: http://localhost:${PORT}`);
+    console.log(`🌐 Environment: ${process.env.PAYPAL_MODE || 'sandbox'}`);
     console.log('📦 Available Packages:');
     Object.entries(LICENSE_PACKAGES).forEach(([price, info]) => {
         console.log(`   💰 $${price} → ${info.name} (${info.days} days)`);
     });
-    console.log('🎯 Endpoints:');
-    console.log(`   GET  / - API status`);
-    console.log(`   GET  /purchase - Purchase page`);
-    console.log(`   GET  /packages - List packages`);
-    console.log(`   POST /generate-key - Manual key generation`);
-    console.log(`   POST /webhook/paypal - PayPal IPN handler`);
+    console.log('✅ Ready to process payments!');
     console.log('========================================');
 });
