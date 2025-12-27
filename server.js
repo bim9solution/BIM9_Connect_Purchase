@@ -22,19 +22,13 @@ const LICENSE_PACKAGES = {
 
 // Cấu hình email với port 587 và STARTTLS
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host: 'smtp.resend.com',
     port: 587,
-    secure: false, // false cho port 587, sẽ upgrade sang TLS bằng STARTTLS
-    requireTLS: true, // Buộc phải dùng TLS
+    secure: false,
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    connectionTimeout: 60000, // 60 giây
-    greetingTimeout: 30000,
-    socketTimeout: 60000,
-    logger: true, // Bật logger để debug
-    debug: true   // Bật debug để xem chi tiết kết nối
+        user: 'resend', // cố định
+        pass: process.env.RESEND_API_KEY // API key từ Resend
+    }
 });
 
 // Test email connection on startup
