@@ -104,7 +104,9 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
     });
     
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: emailProvider === 'sendgrid' 
+            ? process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER
+            : process.env.EMAIL_USER,
         to: recipientEmail,
         subject: '🎉 Your BIM9_Pipes License Key - Activation Instructions',
         html: `
