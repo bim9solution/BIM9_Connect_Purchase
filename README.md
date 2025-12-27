@@ -1,111 +1,229 @@
-# 🔧 BIM9 Pipes License Generator
+# 🔧 BIM9 Pipes License Generator v2.3
 
-Automatic license key generator with PayPal integration for BIM9 Pipes Revit add-in.
+Automatic license key generator with PayPal integration and Resend email delivery.
 
-## 📦 Features
+## ✨ Features
 
-- ✅ **4 License Packages**: Monthly, 3-Month, 6-Month, and Annual
-- ✅ **Automatic Key Generation**: HMAC-SHA256 signed license keys
-- ✅ **Email Delivery**: Beautiful HTML emails with activation instructions
-- ✅ **PayPal Integration**: Secure payment processing with IPN
-- ✅ **Real-time Validation**: Email and payment verification
-- ✅ **Professional UI**: Responsive purchase page
+- ✅ **4 License Packages**: Monthly, 3-Month, 6-Month, Annual
+- ✅ **PayPal Integration**: Webhooks v2 + IPN support
+- ✅ **Resend Email**: Professional email delivery (recommended for production)
+- ✅ **Gmail Support**: Alternative for testing/development
+- ✅ **Automatic License Generation**: Keys generated and sent automatically
+- ✅ **Email Priority System**: Uses customer-entered email from purchase form
+- ✅ **Secure Key Encryption**: HMAC-SHA256 signature
+- ✅ **Beautiful Email Templates**: Professional HTML emails
 
-## 💰 License Packages
+## 📋 Prerequisites
 
-| Package | Duration | Price | Price/Day | Savings |
-|---------|----------|-------|-----------|---------|
-| Monthly | 30 days | $9.90 | $0.33 | - |
-| 3-Month | 90 days | $27.00 | $0.30 | $2.70 |
-| 6-Month | 180 days | $51.00 | $0.28 | $8.40 |
-| Annual | 360 days | $90.00 | $0.25 | $28.80 |
+- Node.js >= 18.0.0
+- npm >= 9.0.0
+- PayPal Developer Account
+- Resend Account (recommended) OR Gmail Account
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 1. Install Dependencies
 
-- Node.js >= 18.0.0
-- Gmail account with App Password
-- PayPal Business account
-
-### Installation
-
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/bim9-pipes-license-generator.git
-cd bim9-pipes-license-generator
-```
-
-2. **Install dependencies**
 ```bash
 npm install
 ```
 
-3. **Configure environment variables**
+### 2. Configure Environment Variables
+
+Create a `.env` file in the root directory:
+
 ```bash
 cp .env.example .env
-# Edit .env with your credentials
 ```
 
-4. **Start the server**
+Edit `.env` with your credentials:
+
+```env
+# Email Provider (choose one)
+EMAIL_PROVIDER=resend
+
+# Resend Configuration (RECOMMENDED)
+RESEND_API_KEY=re_your_api_key
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+
+# OR Gmail Configuration (for testing)
+EMAIL_USER=your.email@gmail.com
+EMAIL_PASS=your-app-password
+
+# PayPal Configuration
+PAYPAL_MODE=sandbox
+PAYPAL_CLIENT_ID=your-client-id
+```
+
+### 3. Start the Server
+
 ```bash
+# Development with auto-reload
+npm run dev
+
+# Production
 npm start
 ```
 
-5. **Access the application**
-- API: http://localhost:3000
-- Purchase Page: http://localhost:3000/purchase
+Server will run on `http://localhost:3000`
 
-## 🔧 Configuration
+## 📧 Email Provider Setup
 
-### Environment Variables
+### Option 1: Resend (RECOMMENDED for Production)
 
-Create a `.env` file with the following variables:
+**Why Resend?**
+- ✅ Better deliverability than Gmail
+- ✅ No daily sending limits
+- ✅ Professional email infrastructure
+- ✅ Simple API
+- ✅ Free tier: 3,000 emails/month
 
-```env
-PORT=3000
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-gmail-app-password
-PAYPAL_MODE=sandbox
-```
+**Setup Steps:**
 
-### Gmail App Password
+1. **Sign up** at [resend.com](https://resend.com)
 
-1. Go to https://myaccount.google.com/security
-2. Enable 2-Step Verification
-3. Go to https://myaccount.google.com/apppasswords
-4. Create an App Password for "Mail"
-5. Copy the 16-character password to `EMAIL_PASS`
+2. **Verify your domain:**
+   - Go to Domains → Add Domain
+   - Add the provided DNS records to your domain
+   - Wait for verification (usually 5-10 minutes)
 
-### PayPal Configuration
+3. **Create API Key:**
+   - Go to API Keys → Create API Key
+   - Copy the key (starts with `re_`)
 
-1. Log in to PayPal Developer: https://developer.paypal.com
-2. Create a REST API app
-3. Get Client ID and Secret
-4. Update `purchase.html` with your Client ID:
-   ```html
-   <script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=USD"></script>
+4. **Configure `.env`:**
+   ```env
+   EMAIL_PROVIDER=resend
+   RESEND_API_KEY=re_your_api_key_here
+   RESEND_FROM_EMAIL=noreply@yourdomain.com
    ```
 
-## 📡 API Endpoints
+5. **Test:**
+   ```bash
+   curl -X POST http://localhost:3000/test-email \
+     -H "Content-Type: application/json" \
+     -d '{"email":"your-test-email@example.com"}'
+   ```
+
+### Option 2: Gmail (for Testing/Development)
+
+**Setup Steps:**
+
+1. **Enable 2-Step Verification:**
+   - Go to [Google Account Security](https://myaccount.google.com/security)
+   - Enable 2-Step Verification
+
+2. **Generate App Password:**
+   - Go to [App Passwords](https://myaccount.google.com/apppasswords)
+   - Select "Mail" and your device
+   - Copy the 16-character password (no spaces!)
+
+3. **Configure `.env`:**
+   ```env
+   EMAIL_PROVIDER=gmail
+   EMAIL_USER=your.email@gmail.com
+   EMAIL_PASS=abcdefghijklmnop
+   ```
+
+4. **Test:**
+   ```bash
+   curl -X POST http://localhost:3000/test-email \
+     -H "Content-Type: application/json" \
+     -d '{"email":"your-test-email@example.com"}'
+   ```
+
+**Gmail Limitations:**
+- ⚠️ 500 emails/day limit
+- ⚠️ May be marked as spam
+- ⚠️ Not recommended for production
+
+## 💳 PayPal Setup
+
+### 1. Create PayPal App
+
+1. Go to [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/)
+2. Create an app:
+   - **Sandbox** for testing
+   - **Live** for production
+3. Copy **Client ID** and **Secret**
+
+### 2. Configure Purchase Page
+
+Edit `purchase.html` and update the PayPal SDK script:
+
+```html
+<script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=USD"></script>
+```
+
+### 3. Set Up Webhooks
+
+1. Go to [Webhooks](https://developer.paypal.com/dashboard/webhooks)
+2. Create Webhook:
+   - **URL**: `https://yourdomain.com/webhook/paypal`
+   - **Events**: Select all payment-related events:
+     - `PAYMENT.CAPTURE.COMPLETED`
+     - `PAYMENT.SALE.COMPLETED`
+     - `CHECKOUT.ORDER.COMPLETED`
+     - `CHECKOUT.ORDER.APPROVED`
+
+### 4. Configure `.env`
+
+```env
+PAYPAL_MODE=sandbox  # or 'live' for production
+PAYPAL_CLIENT_ID=your-client-id
+PAYPAL_SECRET=your-secret
+```
+
+## 🏗️ Project Structure
+
+```
+bim9-pipes-license-generator/
+├── server.js              # Main server file
+├── purchase.html          # Purchase page with PayPal buttons
+├── package.json           # Dependencies
+├── .env                   # Environment variables (create this)
+├── .env.example          # Environment variables template
+└── README.md             # This file
+```
+
+## 🔌 API Endpoints
 
 ### GET /
 Health check and API information
+
 ```bash
-curl http://localhost:3000/
+curl http://localhost:3000
 ```
 
 ### GET /purchase
-Purchase page with all license packages
+Serve the purchase page
 
-### GET /packages
-List all available packages
 ```bash
-curl http://localhost:3000/packages
+curl http://localhost:3000/purchase
+```
+
+### POST /webhook/paypal
+PayPal webhook handler (automatically called by PayPal)
+
+Handles:
+- PayPal Webhooks v2
+- PayPal IPN (legacy)
+- Extracts email from `custom_id` (user-entered email)
+- Generates license key
+- Sends email automatically
+
+### POST /test-email
+Test email sending
+
+```bash
+curl -X POST http://localhost:3000/test-email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com"}'
 ```
 
 ### POST /generate-key
-Manual license key generation (for testing)
+Manually generate a license key
+
 ```bash
 curl -X POST http://localhost:3000/generate-key \
   -H "Content-Type: application/json" \
@@ -116,168 +234,210 @@ curl -X POST http://localhost:3000/generate-key \
   }'
 ```
 
-### POST /webhook/paypal
-PayPal IPN webhook handler (automatically called by PayPal)
+### GET /packages
+Get available license packages
 
-### POST /test-email
-Send a test email (development only)
 ```bash
-curl -X POST http://localhost:3000/test-email \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com"}'
+curl http://localhost:3000/packages
 ```
 
-## 🌐 Deploy to Render.com
+## 📦 License Packages
 
-### Step 1: Prepare Repository
-
-1. Create a new GitHub repository
-2. Upload these files:
-   - `server.js`
-   - `package.json`
-   - `purchase.html`
-   - `.env.example`
-   - `.gitignore`
-   - `README.md`
-
-### Step 2: Create Web Service on Render
-
-1. Go to https://render.com
-2. Click "New +" → "Web Service"
-3. Connect your GitHub repository
-4. Configure:
-   - **Name**: `bim9-pipes-license-generator`
-   - **Region**: Singapore (or closest to you)
-   - **Branch**: `main`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-
-### Step 3: Add Environment Variables
-
-In Render Dashboard, add:
-- `EMAIL_USER` = your-email@gmail.com
-- `EMAIL_PASS` = your-app-password
-- `PAYPAL_MODE` = sandbox (or live)
-
-### Step 4: Deploy
-
-- Click "Create Web Service"
-- Wait 2-5 minutes for deployment
-- Your URL: `https://bim9-pipes-license-generator.onrender.com`
-
-### Step 5: Configure PayPal IPN
-
-1. Go to PayPal Business Account
-2. Settings → Notifications → IPN
-3. Set IPN URL:
-   ```
-   https://bim9-pipes-license-generator.onrender.com/webhook/paypal
-   ```
-
-## 🧪 Testing
-
-### Test with Postman
-
-1. **Generate Key Manually**
-   - Method: POST
-   - URL: `http://localhost:3000/generate-key`
-   - Body (JSON):
-   ```json
-   {
-     "email": "test@example.com",
-     "validDays": 30,
-     "amount": 9.9
-   }
-   ```
-
-2. **Test Email**
-   - Method: POST
-   - URL: `http://localhost:3000/test-email`
-   - Body (JSON):
-   ```json
-   {
-     "email": "your-email@example.com"
-   }
-   ```
-
-### Test with PayPal Sandbox
-
-1. Create sandbox accounts at https://developer.paypal.com
-2. Use IPN Simulator to test webhook
-3. Or complete a test transaction on `/purchase` page
-
-## 📧 Email Template
-
-The system sends beautiful HTML emails with:
-- ✅ Professional design
-- ✅ Clear license key display
-- ✅ Activation instructions
-- ✅ Package information
-- ✅ Expiration date
-- ✅ Support contact
+| Package | Price | Duration | Savings |
+|---------|-------|----------|---------|
+| Monthly | $9.90 | 30 days | - |
+| 3-Month | $27.00 | 90 days | $2.70 |
+| 6-Month | $51.00 | 180 days | $8.40 |
+| Annual | $90.00 | 360 days | $28.80 |
 
 ## 🔐 Security Features
 
-- ✅ HMAC-SHA256 signature for license keys
-- ✅ PayPal IPN verification
-- ✅ Email validation
-- ✅ Environment variable protection
-- ✅ Error handling and logging
+- **HMAC-SHA256 Signature**: License keys are cryptographically signed
+- **Expiration Date**: Built into license key
+- **Email Validation**: Validates email format before processing
+- **PayPal IPN Verification**: Verifies webhooks from PayPal
+- **Environment Variables**: Sensitive data stored securely
 
-## 📝 License Key Format
+## 🧪 Testing
 
+### Test Email Delivery
+
+```bash
+# Test Resend
+curl -X POST http://localhost:3000/test-email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your-email@example.com"}'
 ```
-YYYY-MM-DD|UUID|SIGNATURE
-Example: 2025-02-25|f935afbe-7b90-4006-a557-8fad4007ef63|AbC123...
+
+### Test License Generation
+
+```bash
+# Generate a 30-day license
+curl -X POST http://localhost:3000/generate-key \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","validDays":30,"amount":9.9}'
 ```
 
-## 🐛 Troubleshooting
+### Test PayPal Integration
 
-### Email not sending
-- Check Gmail App Password is correct (16 characters, no spaces)
-- Verify 2-Step Verification is enabled
-- Check spam folder
+1. Use PayPal Sandbox credentials
+2. Make a test purchase on `/purchase`
+3. Check server logs for webhook processing
+4. Verify email delivery
 
-### PayPal webhook not working
-- Verify IPN URL is correct (no trailing slash)
-- Check Render logs for errors
-- Test with IPN Simulator first
+## 📝 How It Works
 
-### Server "sleeping" on Render Free plan
-- Free tier sleeps after 15 minutes of inactivity
-- First request takes 30-60 seconds to wake up
-- Upgrade to Starter plan ($7/month) for 24/7 uptime
+### Purchase Flow
+
+1. **Customer visits** `/purchase` page
+2. **Enters email** in the form
+3. **Clicks PayPal button** for desired package
+4. **Completes payment** on PayPal
+5. **PayPal sends webhook** to `/webhook/paypal` with `custom_id` (customer email)
+6. **Server receives webhook**:
+   - Extracts email from `custom_id` (priority) or PayPal account
+   - Validates payment amount
+   - Determines license package
+   - Generates license key with expiration date
+   - Sends email via Resend/Gmail
+7. **Customer receives email** with license key within 2-5 minutes
+
+### Email Priority System
+
+The system uses a smart email extraction priority:
+
+1. **Priority 1**: `custom_id` from purchase form (most reliable!)
+   - This is the email the customer entered
+   - Set in PayPal button's `custom_id` field
+2. **Priority 2**: PayPal account email
+   - Fallback if `custom_id` not available
+
+This ensures customers receive emails at their preferred address.
+
+## 🚀 Deployment
+
+### Deploy to Railway
+
+1. **Create Railway account**: [railway.app](https://railway.app)
+
+2. **Create new project** from GitHub repo
+
+3. **Add environment variables**:
+   ```
+   EMAIL_PROVIDER=resend
+   RESEND_API_KEY=re_xxx
+   RESEND_FROM_EMAIL=noreply@yourdomain.com
+   PAYPAL_MODE=live
+   PAYPAL_CLIENT_ID=xxx
+   PORT=3000
+   ```
+
+4. **Deploy** and get your URL
+
+5. **Update PayPal webhook URL** to your Railway URL
+
+### Deploy to Heroku
+
+```bash
+# Install Heroku CLI
+heroku login
+
+# Create app
+heroku create your-app-name
+
+# Set environment variables
+heroku config:set EMAIL_PROVIDER=resend
+heroku config:set RESEND_API_KEY=re_xxx
+heroku config:set RESEND_FROM_EMAIL=noreply@yourdomain.com
+heroku config:set PAYPAL_MODE=live
+heroku config:set PAYPAL_CLIENT_ID=xxx
+
+# Deploy
+git push heroku main
+
+# View logs
+heroku logs --tail
+```
+
+## 🔧 Troubleshooting
+
+### Email Not Sending
+
+**Resend:**
+- ✅ Check API key is correct
+- ✅ Verify domain in Resend dashboard
+- ✅ Check `RESEND_FROM_EMAIL` uses verified domain
+- ✅ Check Resend dashboard for error logs
+
+**Gmail:**
+- ✅ Enable 2-Step Verification
+- ✅ Use App Password (not regular password)
+- ✅ Check for typos in credentials
+- ✅ Try different Gmail account
+
+### PayPal Webhook Not Working
+
+- ✅ Check webhook URL is publicly accessible
+- ✅ Verify webhook events are subscribed
+- ✅ Check server logs for incoming requests
+- ✅ Ensure `custom_id` is set in PayPal button
+- ✅ Test with PayPal Sandbox first
+
+### License Key Not Received
+
+- ✅ Check spam folder
+- ✅ Verify email address is correct
+- ✅ Check server logs for errors
+- ✅ Test with `/test-email` endpoint
+- ✅ Verify PayPal webhook was received
+
+### Server Logs
+
+Check logs for detailed debugging:
+
+```bash
+# Development
+npm run dev
+
+# Production
+npm start
+
+# View last 100 lines
+tail -f -n 100 logs.txt
+```
 
 ## 📊 Monitoring
 
-### View Logs on Render
-1. Go to Render Dashboard
-2. Click on your service
-3. Click "Logs" tab
-4. View real-time logs
+The server provides detailed logging:
 
-### Check Email Delivery
-- Monitor console logs for email confirmations
-- Check for error messages in logs
+- ✅ **Email sent successfully**: Confirms email delivery
+- ⚠️ **Email configuration error**: Check credentials
+- 📨 **Received PayPal notification**: Webhook received
+- 💰 **Processing payment**: Payment being processed
+- 🔑 **Generated license key**: Key created
+- ❌ **Error messages**: Debug information
 
 ## 🆘 Support
 
-For questions or issues:
-- 📧 Email: support@bim9pipes.com
-- 🐛 Issues: GitHub Issues page
-- 📚 Docs: This README
+For issues or questions:
 
-## 📄 License
+- **Email**: support@bim9pipes.com
+- **Documentation**: Check this README
+- **Logs**: Enable detailed logging in server
+
+## 📜 License
 
 ISC License - See LICENSE file for details
 
-## 🙏 Acknowledgments
+## 🎉 Credits
 
-- Node.js and Express.js
-- Nodemailer for email delivery
-- PayPal for payment processing
-- Render.com for hosting
+- **BIM9 Pipes Team**
+- **PayPal API**
+- **Resend Email Service**
+- **Node.js & Express**
 
 ---
 
-**Made with ❤️ for BIM9 Pipes users**
+**Version**: 2.3.0  
+**Last Updated**: December 2025  
+**Powered by**: Resend + PayPal + Node.js
