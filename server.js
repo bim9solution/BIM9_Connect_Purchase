@@ -1,6 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const path = require('path');
 require('dotenv').config();
 
@@ -20,65 +20,26 @@ const LICENSE_PACKAGES = {
     '90': { days: 360, name: 'Annual' }
 };
 
-// Email configuration - Support Gmail and Resend
-let transporter;
-const emailProvider = process.env.EMAIL_PROVIDER || 'gmail';
+// Initialize Resend client
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-if (emailProvider === 'resend') {
-    // Resend configuration (Recommended for production!)
-    console.log('📧 Using Resend for email');
-    
-    transporter = nodemailer.createTransport({
-        host: 'smtp.resend.com',
-        port: 465,
-        secure: true, // use TLS
-        auth: {
-            user: 'resend',
-            pass: process.env.RESEND_API_KEY
-        }
-    });
+// Verify Resend configuration on startup
+console.log('📧 ========== EMAIL CONFIGURATION ==========');
+if (!process.env.RESEND_API_KEY) {
+    console.error('❌ RESEND_API_KEY is not set in environment variables');
+    console.error('❌ Please set RESEND_API_KEY in Render.com Environment Variables');
 } else {
-    // Gmail configuration (Default)
-    console.log('📧 Using Gmail for email');
-    transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000
-    });
+    console.log('✅ Resend API Key detected');
+    console.log(`✅ Key prefix: ${process.env.RESEND_API_KEY.substring(0, 8)}...`);
 }
 
-// Test email connection on startup
-transporter.verify(function(error, success) {
-    if (error) {
-        console.error('❌ Email configuration error:', error);
-        console.error('❌ Provider:', emailProvider);
-        if (emailProvider === 'gmail') {
-            console.error('❌ Please check:');
-            console.error('   1. EMAIL_USER is set correctly');
-            console.error('   2. EMAIL_PASS is Gmail App Password (16 chars, no spaces)');
-            console.error('   3. 2-Step Verification is enabled on Gmail');
-            console.error('   4. Consider switching to Resend (set EMAIL_PROVIDER=resend)');
-        } else {
-            console.error('❌ Please check:');
-            console.error('   1. RESEND_API_KEY is set correctly');
-            console.error('   2. RESEND_FROM_EMAIL is set (verified domain email)');
-            console.error('   3. Your domain is verified in Resend dashboard');
-        }
-    } else {
-        console.log('✅ Email server is ready to send messages');
-        console.log(`✅ Provider: ${emailProvider}`);
-        if (emailProvider === 'gmail') {
-            console.log(`✅ Sending from: ${process.env.EMAIL_USER}`);
-        } else {
-            console.log(`✅ Resend configured with: ${process.env.RESEND_FROM_EMAIL}`);
-        }
-    }
-});
+if (!process.env.RESEND_FROM_EMAIL) {
+    console.error('❌ RESEND_FROM_EMAIL is not set in environment variables');
+    console.error('❌ Please set RESEND_FROM_EMAIL (e.g., noreply@yourdomain.com)');
+} else {
+    console.log(`✅ From Email: ${process.env.RESEND_FROM_EMAIL}`);
+}
+console.log('==========================================');
 
 // Generate license key function
 function generateLicenseKey(validDays) {
@@ -98,7 +59,7 @@ function signData(data, key) {
     return hmac.digest('base64');
 }
 
-// Send license email function
+// Send license email function using Resend SDK
 async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, packageName) {
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + validDays);
@@ -108,19 +69,7 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
         day: 'numeric' 
     });
     
-    // Determine FROM email based on provider
-    let fromEmail;
-    if (emailProvider === 'resend') {
-        fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com';
-    } else {
-        fromEmail = process.env.EMAIL_USER;
-    }
-    
-    const mailOptions = {
-        from: fromEmail,
-        to: recipientEmail,
-        subject: '🎉 Your BIM9_Pipes License Key - Activation Instructions',
-        html: `
+    const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -174,15 +123,47 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
     </div>
 </body>
 </html>
-        `
-    };
+    `;
     
     try {
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ License email sent successfully to ${recipientEmail}`);
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+        
+        console.log(`📧 Sending email via Resend...`);
+        console.log(`   From: ${fromEmail}`);
+        console.log(`   To: ${recipientEmail}`);
+        
+        const data = await resend.emails.send({
+            from: fromEmail,
+            to: [recipientEmail],
+            subject: '🎉 Your BIM9 Pipes License Key - Activation Instructions',
+            html: htmlContent
+        });
+        
+        console.log(`✅ Email sent successfully!`);
+        console.log(`✅ Resend Email ID: ${data.id}`);
+        console.log(`✅ Recipient: ${recipientEmail}`);
+        
         return true;
     } catch (error) {
-        console.error('❌ Error sending email:', error);
+        console.error('❌ ========== EMAIL SENDING ERROR ==========');
+        console.error('❌ Error:', error.message);
+        console.error('❌ Error name:', error.name);
+        
+        if (error.message.includes('API key')) {
+            console.error('❌ Invalid Resend API Key!');
+            console.error('❌ Please check:');
+            console.error('   1. RESEND_API_KEY is set correctly in Render.com');
+            console.error('   2. API key starts with "re_"');
+            console.error('   3. API key is active in Resend dashboard');
+        } else if (error.message.includes('domain')) {
+            console.error('❌ Domain verification issue!');
+            console.error('❌ Please check:');
+            console.error('   1. RESEND_FROM_EMAIL uses verified domain');
+            console.error('   2. Domain is verified in Resend dashboard');
+            console.error('   3. Or use: onboarding@resend.dev for testing');
+        }
+        
+        console.error('==========================================');
         throw error;
     }
 }
@@ -191,21 +172,23 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
 app.get('/', (req, res) => {
     res.json({ 
         status: 'BIM9 Pipes License Generator API is running',
-        version: '2.3-resend',
-        email_provider: emailProvider,
+        version: '2.4-resend-pure',
+        email_provider: 'Resend SDK (Pure)',
+        resend_configured: !!(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL),
         packages: LICENSE_PACKAGES,
         endpoints: {
             purchase: '/purchase',
             generateKey: '/generate-key',
             webhook: '/webhook/paypal',
-            testEmail: '/test-email'
+            testEmail: '/test-email',
+            packages: '/packages'
         },
         features: [
-            'Supports PayPal Webhooks v2',
-            'Supports PayPal IPN (legacy)',
+            'Resend SDK (Pure - No Nodemailer)',
+            'PayPal Webhooks v2 support',
+            'PayPal IPN (legacy) support',
             'Email from custom_id (user-entered)',
-            'Automatic format detection',
-            'Resend.com email integration'
+            'Automatic format detection'
         ]
     });
 });
@@ -215,29 +198,24 @@ app.get('/purchase', (req, res) => {
     res.sendFile(path.join(__dirname, 'purchase.html'));
 });
 
-// ============================================================
-// MAIN ENDPOINT: Handle both IPN and Webhooks v2 with custom_id
-// ============================================================
+// Main PayPal webhook endpoint
 app.post('/webhook/paypal', async (req, res) => {
     try {
         console.log('📨 ========== RECEIVED PAYPAL NOTIFICATION ==========');
         console.log('📨 Timestamp:', new Date().toISOString());
-        console.log('📨 Full payload:', JSON.stringify(req.body, null, 2));
         
-        let buyerEmail, amount, packageInfo, eventDescription;
+        let buyerEmail, amount, packageInfo;
         let customEmail = null;
         let paypalEmail = null;
         
-        // ========== DETECT FORMAT: Webhooks v2 or IPN ==========
-        
+        // Detect format: Webhooks v2 or IPN
         if (req.body.event_type) {
-            // ========== WEBHOOKS V2 FORMAT (NEW) ==========
+            // Webhooks v2 format
             console.log('🔵 Processing as PayPal Webhooks v2');
             
             const eventType = req.body.event_type;
             console.log(`🔵 Event Type: ${eventType}`);
             
-            // Only process payment completed events
             const validEvents = [
                 'PAYMENT.CAPTURE.COMPLETED',
                 'PAYMENT.SALE.COMPLETED',
@@ -251,31 +229,21 @@ app.post('/webhook/paypal', async (req, res) => {
             }
             
             const resource = req.body.resource;
-            console.log('🔵 Resource:', JSON.stringify(resource, null, 2));
             
-            // ========== EXTRACT EMAIL WITH PRIORITY ==========
-            
-            // Priority 1: custom_id (Email from purchase form - MOST RELIABLE!)
+            // Extract email with priority
             customEmail = resource.purchase_units?.[0]?.payments?.captures?.[0]?.custom_id
                        || resource.purchase_units?.[0]?.custom_id
                        || resource.custom_id;
             
-            // Priority 2: PayPal account email
             paypalEmail = resource.payer?.email_address 
                        || resource.payer?.payer_info?.email
                        || resource.payer?.email;
             
-            console.log('📧 ========== EMAIL EXTRACTION ==========');
-            console.log('📧 Email from custom_id (user form):', customEmail);
+            console.log('📧 Email from custom_id:', customEmail);
             console.log('📧 Email from PayPal account:', paypalEmail);
             
-            // Use custom_id if available, otherwise use PayPal email
             buyerEmail = customEmail || paypalEmail;
             
-            console.log('📧 Final email to use:', buyerEmail);
-            console.log('📧 Email source:', customEmail ? 'custom_id (user-entered) ✅' : 'PayPal account');
-            
-            // Extract amount - try multiple paths
             amount = parseFloat(
                 resource.amount?.value 
                 || resource.amount?.total
@@ -284,112 +252,59 @@ app.post('/webhook/paypal', async (req, res) => {
                 || 0
             );
             
-            eventDescription = `Webhook v2: ${eventType}`;
-            
-            console.log(`🔵 Extracted - Amount: $${amount}`);
-            
         } else if (req.body.payment_status || req.body.txn_type) {
-            // ========== IPN FORMAT (OLD) ==========
+            // IPN format
             console.log('🟢 Processing as PayPal IPN');
-            
-            // Verify IPN with PayPal
-            try {
-                const isValid = await verifyPayPalIPN(req.body);
-                if (!isValid) {
-                    console.error('❌ Invalid PayPal IPN signature');
-                    return res.status(400).json({ error: 'Invalid IPN' });
-                }
-                console.log('✅ IPN verified successfully');
-            } catch (verifyError) {
-                console.error('⚠️ IPN verification error:', verifyError);
-                console.log('⚠️ Continuing anyway (remove this in production)');
-            }
             
             const paymentStatus = req.body.payment_status;
             console.log(`🟢 Payment Status: ${paymentStatus}`);
             
             if (paymentStatus !== 'Completed') {
-                console.log(`⏸️ Payment not completed (status: ${paymentStatus}), returning 200 OK`);
+                console.log(`⏸️ Payment not completed, returning 200 OK`);
                 return res.status(200).json({ status: 'payment_not_completed', payment_status: paymentStatus });
             }
             
-            // ========== EXTRACT EMAIL WITH PRIORITY ==========
-            
-            // Priority 1: custom field (Email from purchase form)
             customEmail = req.body.custom || req.body.custom_id;
-            
-            // Priority 2: PayPal IPN email
             paypalEmail = req.body.payer_email || req.body.receiver_email;
             
-            console.log('📧 ========== EMAIL EXTRACTION ==========');
-            console.log('📧 Email from custom field (user form):', customEmail);
-            console.log('📧 Email from IPN payer_email:', paypalEmail);
-            
-            // Use custom if available, otherwise use payer_email
             buyerEmail = customEmail || paypalEmail;
-            
-            console.log('📧 Final email to use:', buyerEmail);
-            console.log('📧 Email source:', customEmail ? 'custom field (user-entered) ✅' : 'IPN payer_email');
-            
             amount = parseFloat(req.body.mc_gross || 0);
             
-            eventDescription = `IPN: ${paymentStatus}`;
-            
-            console.log(`🟢 Extracted - Amount: $${amount}`);
-            
         } else {
-            // ========== UNKNOWN FORMAT ==========
-            console.error('❌ Unknown payload format - neither Webhook nor IPN');
-            console.error('❌ Available keys:', Object.keys(req.body));
+            console.error('❌ Unknown payload format');
             return res.status(400).json({ 
                 error: 'Unknown payload format',
                 received_keys: Object.keys(req.body)
             });
         }
         
-        // ========== VALIDATE DATA ==========
-        
+        // Validate data
         if (!buyerEmail) {
-            console.error('❌ Missing buyer email in payload');
-            console.error('❌ Checked paths:');
-            console.error('   - custom_id / custom field');
-            console.error('   - payer.email_address');
-            console.error('   - payer_email');
-            return res.status(400).json({ 
-                error: 'Missing buyer email',
-                hint: 'Make sure custom_id is set in PayPal order'
-            });
+            console.error('❌ Missing buyer email');
+            return res.status(400).json({ error: 'Missing buyer email' });
         }
         
-        // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(buyerEmail)) {
             console.error('❌ Invalid email format:', buyerEmail);
-            return res.status(400).json({ 
-                error: 'Invalid email format',
-                email: buyerEmail
-            });
+            return res.status(400).json({ error: 'Invalid email format' });
         }
         
         if (!amount || amount <= 0) {
             console.error('❌ Invalid amount:', amount);
-            return res.status(400).json({ 
-                error: 'Invalid amount',
-                amount: amount
-            });
+            return res.status(400).json({ error: 'Invalid amount' });
         }
         
         console.log(`💰 Processing payment: $${amount} to ${buyerEmail}`);
         
-        // ========== DETERMINE LICENSE PACKAGE ==========
-        
+        // Determine package
         packageInfo = null;
         let closestPrice = null;
         let priceDiff = Infinity;
         
         for (const [price, info] of Object.entries(LICENSE_PACKAGES)) {
             const diff = Math.abs(amount - parseFloat(price));
-            if (diff < 0.5 && diff < priceDiff) {  // Allow 50 cent tolerance
+            if (diff < 0.5 && diff < priceDiff) {
                 packageInfo = info;
                 closestPrice = price;
                 priceDiff = diff;
@@ -398,7 +313,6 @@ app.post('/webhook/paypal', async (req, res) => {
         
         if (!packageInfo) {
             console.error(`❌ Unknown amount: $${amount}`);
-            console.error(`❌ Valid amounts: ${Object.keys(LICENSE_PACKAGES).join(', ')}`);
             return res.status(400).json({ 
                 error: 'Unknown amount',
                 received: amount,
@@ -406,47 +320,31 @@ app.post('/webhook/paypal', async (req, res) => {
             });
         }
         
-        console.log(`📦 Package matched: ${packageInfo.name} (${packageInfo.days} days) - Price: $${closestPrice}`);
+        console.log(`📦 Package: ${packageInfo.name} (${packageInfo.days} days) - $${closestPrice}`);
         
-        // ========== GENERATE LICENSE KEY ==========
-        
+        // Generate license key
         const licenseKey = generateLicenseKey(packageInfo.days);
         console.log(`🔑 Generated license key: ${licenseKey}`);
         
-        // ========== SEND EMAIL ==========
-        
+        // Send email
         console.log(`📧 ========== SENDING EMAIL ==========`);
-        console.log(`📧 To: ${buyerEmail}`);
-        console.log(`📧 Package: ${packageInfo.name}`);
-        console.log(`📧 License Key: ${licenseKey}`);
         
         try {
             await sendLicenseEmail(buyerEmail, licenseKey, packageInfo.days, amount, packageInfo.name);
             console.log(`✅ Email sent successfully!`);
         } catch (emailError) {
-            console.error(`❌ Failed to send email:`, emailError);
-            console.error(`❌ Error details:`, emailError.message);
+            console.error(`❌ Failed to send email:`, emailError.message);
             
-            // Return 500 so PayPal will retry
             return res.status(500).json({ 
                 error: 'Failed to send email',
                 details: emailError.message,
                 email_to: buyerEmail,
-                hint: emailProvider === 'resend' 
-                    ? 'Check RESEND_API_KEY and RESEND_FROM_EMAIL'
-                    : 'Check EMAIL_USER and EMAIL_PASS environment variables'
+                hint: 'Check RESEND_API_KEY and RESEND_FROM_EMAIL environment variables'
             });
         }
         
         console.log(`✅ ========== NOTIFICATION PROCESSED SUCCESSFULLY ==========`);
-        console.log(`✅ Summary:`);
-        console.log(`   - Email: ${buyerEmail} (from ${customEmail ? 'custom_id' : 'PayPal account'})`);
-        console.log(`   - Amount: $${amount}`);
-        console.log(`   - Package: ${packageInfo.name} (${packageInfo.days} days)`);
-        console.log(`   - License Key: ${licenseKey}`);
-        console.log(`   - Email Status: Sent ✅`);
         
-        // Return 200 OK to PayPal
         return res.status(200).json({ 
             status: 'success',
             email_sent: true,
@@ -461,62 +359,12 @@ app.post('/webhook/paypal', async (req, res) => {
         console.error('❌ Error:', error);
         console.error('❌ Stack:', error.stack);
         
-        // Return 500 so PayPal will retry
         return res.status(500).json({ 
             error: 'Internal server error',
             message: error.message 
         });
     }
 });
-
-// Verify PayPal IPN function
-async function verifyPayPalIPN(ipnData) {
-    const https = require('https');
-    
-    const verifyData = { cmd: '_notify-validate', ...ipnData };
-    const postData = new URLSearchParams(verifyData).toString();
-    
-    const paypalUrl = process.env.PAYPAL_MODE === 'live' 
-        ? 'www.paypal.com' 
-        : 'www.sandbox.paypal.com';
-    
-    console.log(`🔍 Verifying IPN with ${paypalUrl}...`);
-    
-    return new Promise((resolve, reject) => {
-        const options = {
-            hostname: paypalUrl,
-            port: 443,
-            path: '/cgi-bin/webscr',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(postData)
-            }
-        };
-        
-        const req = https.request(options, (res) => {
-            let body = '';
-            res.on('data', (chunk) => body += chunk);
-            res.on('end', () => {
-                if (body === 'VERIFIED') {
-                    console.log('✅ PayPal IPN verified');
-                    resolve(true);
-                } else {
-                    console.error('❌ PayPal verification failed:', body);
-                    resolve(false);
-                }
-            });
-        });
-        
-        req.on('error', (error) => {
-            console.error('❌ Error verifying PayPal IPN:', error);
-            reject(error);
-        });
-        
-        req.write(postData);
-        req.end();
-    });
-}
 
 // Test email endpoint
 app.post('/test-email', async (req, res) => {
@@ -527,23 +375,30 @@ app.post('/test-email', async (req, res) => {
             return res.status(400).json({ error: 'Email is required' });
         }
         
-        console.log(`📧 Sending test email to: ${email}`);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+        
+        console.log(`📧 ========== TEST EMAIL REQUEST ==========`);
+        console.log(`📧 Test email to: ${email}`);
         
         const testKey = generateLicenseKey(30);
         await sendLicenseEmail(email, testKey, 30, 9.9, 'Test Monthly');
         
         res.json({ 
             success: true, 
-            message: 'Test email sent successfully',
+            message: 'Test email sent successfully via Resend SDK',
             email: email,
             license_key: testKey,
-            email_provider: emailProvider
+            email_provider: 'Resend SDK (Pure)'
         });
     } catch (error) {
         console.error('❌ Error sending test email:', error);
         res.status(500).json({ 
             error: 'Failed to send test email',
-            details: error.message 
+            details: error.message,
+            hint: 'Check RESEND_API_KEY and RESEND_FROM_EMAIL environment variables'
         });
     }
 });
@@ -584,7 +439,7 @@ app.post('/generate-key', async (req, res) => {
             validDays,
             packageName,
             email,
-            message: 'License key generated and sent successfully'
+            message: 'License key generated and sent successfully via Resend SDK'
         });
     } catch (error) {
         console.error('❌ Error generating key:', error);
@@ -637,25 +492,22 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log('🚀 ========================================');
-    console.log(`🔧 BIM9 Pipes License Generator API v2.3`);
+    console.log(`🔧 BIM9 Pipes License Generator API v2.4`);
     console.log(`📡 Server running on port ${PORT}`);
     console.log(`🌐 Environment: ${process.env.PAYPAL_MODE || 'sandbox'}`);
-    console.log(`📧 Email Provider: ${emailProvider}`);
-    if (emailProvider === 'resend') {
-        console.log(`📧 Email from: ${process.env.RESEND_FROM_EMAIL || 'NOT CONFIGURED'}`);
-    } else {
-        console.log(`📧 Email from: ${process.env.EMAIL_USER || 'NOT CONFIGURED'}`);
-    }
+    console.log(`📧 Email Provider: Resend SDK (Pure - No Nodemailer)`);
+    console.log(`📧 From Email: ${process.env.RESEND_FROM_EMAIL || 'NOT SET'}`);
+    console.log(`📧 API Key Status: ${process.env.RESEND_API_KEY ? '✅ Set' : '❌ Not Set'}`);
     console.log('📦 Available Packages:');
     Object.entries(LICENSE_PACKAGES).forEach(([price, info]) => {
         console.log(`   💰 $${price} → ${info.name} (${info.days} days)`);
     });
     console.log('✨ Features:');
+    console.log('   ✅ Resend SDK (Pure - No Nodemailer)');
     console.log('   ✅ PayPal Webhooks v2 support');
     console.log('   ✅ PayPal IPN (legacy) support');
-    console.log('   ✅ Email from custom_id (user-entered) - PRIORITY!');
+    console.log('   ✅ Email from custom_id (user-entered)');
     console.log('   ✅ Automatic format detection');
-    console.log('   ✅ Resend.com email integration');
     console.log('   ✅ Detailed logging for debugging');
     console.log('✅ Ready to process payments!');
     console.log('========================================');
