@@ -1,6 +1,6 @@
 // ============================================================
-// BIM9 Pipes – License Server (PayPal + Resend)
-// Version: 3.0
+// BIM9 Pipes – License Server
+// PayPal Webhook + Resend Email
 // ============================================================
 
 // -*- coding: utf-8 -*-
@@ -23,7 +23,10 @@ app.use(express.urlencoded({ extended: true }));
 const PORT = process.env.PORT || 3000;
 const PAYPAL_MODE = process.env.PAYPAL_MODE || 'sandbox';
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM || 'BIM9 Pipes <noreply@bim9pipes.com>';
+
+// ❗ KHÔNG CẦN EMAIL_FROM ENV
+// fallback mặc định – domain đã verify sẵn của Resend
+const EMAIL_FROM = 'BIM9 Pipes <onboarding@resend.dev>';
 
 if (!RESEND_API_KEY) {
     console.error('❌ Missing RESEND_API_KEY');
@@ -40,10 +43,10 @@ const ENCRYPTION_KEY = '3UYpfxVBCBptt3LL8iLhBzrOw3U0Nl7xtvNUm6eRAbE=';
 const UNIQUE_IDENTIFIER = 'f935afbe-7b90-4006-a557-8fad4007ef63';
 
 const LICENSE_PACKAGES = {
-    '9.9':  { days: 30,  name: 'Monthly' },
-    '27':   { days: 90,  name: '3-Month' },
-    '51':   { days: 180, name: '6-Month' },
-    '90':   { days: 360, name: 'Annual' }
+    '9.9': { days: 30, name: 'Monthly' },
+    '27': { days: 90, name: '3-Month' },
+    '51': { days: 180, name: '6-Month' },
+    '90': { days: 360, name: 'Annual' }
 };
 
 // ============================================================
@@ -68,7 +71,7 @@ function generateLicenseKey(validDays) {
 }
 
 // ============================================================
-// EMAIL (RESEND)
+// EMAIL (RESEND – NO ENV DEPENDENCY)
 // ============================================================
 
 async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, packageName) {
@@ -123,7 +126,7 @@ ${licenseKey}
         throw error;
     }
 
-    console.log('✅ Email sent:', data.id);
+    console.log('✅ Email sent via Resend:', data.id);
     return true;
 }
 
@@ -135,7 +138,6 @@ ${licenseKey}
 app.get('/', (req, res) => {
     res.json({
         status: 'BIM9 Pipes License API',
-        version: '3.0',
         paypal_mode: PAYPAL_MODE,
         packages: LICENSE_PACKAGES
     });
@@ -155,9 +157,9 @@ app.post('/webhook/paypal', async (req, res) => {
         let buyerEmail = null;
         let amount = 0;
 
-        // ---------- WEBHOOKS v2 ----------
+        // Webhook v2
         if (req.body.event_type) {
-            const resource = req.body.resource;
+            const resource = req.body.resource || {};
 
             buyerEmail =
                 resource.payer?.email_address ||
@@ -169,8 +171,7 @@ app.post('/webhook/paypal', async (req, res) => {
                 0
             );
         }
-
-        // ---------- IPN ----------
+        // IPN
         else if (req.body.payment_status === 'Completed') {
             buyerEmail = req.body.payer_email;
             amount = parseFloat(req.body.mc_gross || 0);
@@ -230,16 +231,11 @@ app.post('/test-email', async (req, res) => {
 
         const testKey = generateLicenseKey(30);
 
-        await sendLicenseEmail(
-            email,
-            testKey,
-            30,
-            9.9,
-            'Test Monthly'
-        );
+        await sendLicenseEmail(email, testKey, 30, 9.9, 'Test Monthly');
 
         res.json({ success: true, email: email });
     } catch (err) {
+        console.error('❌ Test email error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -250,9 +246,8 @@ app.post('/test-email', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log('======================================');
-    console.log('🚀 BIM9 Pipes License Server v3.0');
+    console.log('🚀 BIM9 Pipes License Server');
     console.log('📡 Port:', PORT);
-    console.log('💳 PayPal:', PAYPAL_MODE);
-    console.log('📧 Email: Resend');
+    console.log('📧 Email provider: Resend (default domain)');
     console.log('======================================');
 });
