@@ -20,23 +20,58 @@ const LICENSE_PACKAGES = {
     '90': { days: 360, name: 'Annual' }
 };
 
-// Cấu hình email
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+// Cấu hình email - Support cả Gmail và SendGrid
+let transporter;
+const emailProvider = process.env.EMAIL_PROVIDER || 'gmail';
+
+if (emailProvider === 'sendgrid') {
+    // SendGrid configuration (Khuyến nghị cho production!)
+    console.log('📧 Using SendGrid for email');
+    const nodemailerSendgrid = require('nodemailer-sendgrid');
+    
+    transporter = nodemailer.createTransport(
+        nodemailerSendgrid({
+            apiKey: process.env.SENDGRID_API_KEY
+        })
+    );
+} else {
+    // Gmail configuration (Default)
+    console.log('📧 Using Gmail for email');
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        },
+        // Add timeout settings
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000,
+        socketTimeout: 10000
+    });
+}
 
 // Test email connection on startup
 transporter.verify(function(error, success) {
     if (error) {
         console.error('❌ Email configuration error:', error);
-        console.error('❌ Please check EMAIL_USER and EMAIL_PASS in environment variables');
+        console.error('❌ Provider:', emailProvider);
+        if (emailProvider === 'gmail') {
+            console.error('❌ Please check:');
+            console.error('   1. EMAIL_USER is set correctly');
+            console.error('   2. EMAIL_PASS is Gmail App Password (16 chars, no spaces)');
+            console.error('   3. 2-Step Verification is enabled on Gmail');
+            console.error('   4. Consider switching to SendGrid (set EMAIL_PROVIDER=sendgrid)');
+        } else {
+            console.error('❌ Please check SENDGRID_API_KEY is set correctly');
+        }
     } else {
         console.log('✅ Email server is ready to send messages');
-        console.log(`✅ Sending from: ${process.env.EMAIL_USER}`);
+        console.log(`✅ Provider: ${emailProvider}`);
+        if (emailProvider === 'gmail') {
+            console.log(`✅ Sending from: ${process.env.EMAIL_USER}`);
+        } else {
+            console.log(`✅ SendGrid API Key configured`);
+        }
     }
 });
 
@@ -69,7 +104,9 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
     });
     
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: emailProvider === 'sendgrid' 
+            ? process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER
+            : process.env.EMAIL_USER,
         to: recipientEmail,
         subject: '🎉 Your BIM9_Pipes License Key - Activation Instructions',
         html: `
