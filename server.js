@@ -151,73 +151,229 @@ app.get('/purchase', (req, res) => {
     res.sendFile(path.join(__dirname, 'purchase.html'));
 });
 
-// Webhook PayPal – Ưu tiên email từ form (custom_id)
+// Webhook PayPal – Cải thiện mạnh mẽ việc lấy email
 app.post('/webhook/paypal', async (req, res) => {
     try {
         console.log('📨 ========== PAYPAL WEBHOOK RECEIVED ==========');
+        console.log('Full payload:', JSON.stringify(req.body, null, 2));
 
-        let customerEmail, amount, packageInfo;
+        let customerEmail = null;
+        let amount = 0;
+        let packageInfo = null;
 
-        if (req.body.event_type) {
-            const eventType = req.body.event_type;
-            const validEvents = ['PAYMENT.CAPTURE.COMPLETED', 'CHECKOUT.ORDER.COMPLETED'];
-            
-            if (!validEvents.includes(eventType)) {
-                return res.status(200).json({ status: 'ignored' });
-            }
-
-            const resource = req.body.resource;
-
-            // ƯU TIÊN 1: Email từ form (custom_id trong PayPal order)
-            customerEmail = resource.purchase_units?.[0]?.custom_id;
-
-            // ƯU TIÊN 2: Nếu không có → lấy email PayPal
-            if (!customerEmail || !customerEmail.includes('@')) {
-                customerEmail = resource.payer?.email_address;
-            }
-
-            amount = parseFloat(resource.purchase_units?.[0]?.amount?.value || resource.amount?.value || 0);
-
-        } else {
-            return res.status(400).json({ error: 'Unknown format' });
+        if (!req.body.event_type) {
+            console.error('❌ Not a webhook v2 format');
+            return res.status(400).json({ error: 'Invalid webhook format' });
         }
 
-        if (!customerEmail || !customerEmail.includes('@')) {
-            console.error('❌ No valid email found');
-            return res.status(400).json({ error: 'No customer email' });
+        const eventType = req.body.event_type;
+        const validEvents = [
+            'PAYMENT.CAPTURE.COMPLETED',
+            'PAYMENT.CAPTURE.PENDING',
+            'CHECKOUT.ORDER.COMPLETED',
+            'CHECKOUT.ORDER.APPROVED'
+        ];
+
+        if (!validEvents.includes(eventType)) {
+            console.log(`⏸️ Ignored event: ${eventType}`);
+            return res.status(200).json({ status: 'ignored_event' });
         }
+
+        const resource = req.body.resource;
+
+        // ====== BƯỚC 1: Ưu tiên lấy email từ FORM (custom_id) – Đây là email khách nhập trên trang purchase.html ======
+        if (resource.purchase_units && resource.purchase_units[0] && resource.purchase_units[0].custom_id) {
+            const customId = resource.purchase_units[0].custom_id.trim();
+            if (customId && customId.includes('@') && customId.length > 5) {
+                customerEmail = customId;
+                console.log(`✅ Email taken from form (custom_id): ${customerEmail}`);
+            }
+        }
+
+        // ====== BƯỚC 2: Nếu không có → lấy từ PayPal account (có nhiều vị trí khác nhau) ======
+        if (!customerEmail) {
+            const possibleEmails = [
+                resource.payer?.email_address,
+                resource.payer?.payer_info?.email,
+                resource.payer?.email,
+                resource.payee?.email_address,
+                // Một số trường hợp sandbox cũ
+                resource.payer?.email_address,
+                // Trong trường hợp checkout order
+                resource.purchase_units?.[0]?.payee?.email_address
+            ];
+
+            for (const email of possibleEmails) {
+                if (typeof email === 'string' && email.trim().includes('@') && email.trim().length > 5) {
+                    customerEmail = email.trim();
+                    console.log(`✅ Email taken from PayPal account: ${customerEmail}`);
+                    break;
+                }
+            }
+        }
+
+        // ====== BƯỚC 3: Nếu vẫn không có → báo lỗi rõ ràng ======
+        if (!customerEmail) {
+            console.error('❌ No valid email found in any field');
+            console.error('Available fields:', JSON.stringify(resource, null, 2));
+            return res.status(400).json({ 
+                error: 'No valid customer email found',
+                tip: 'Check if email was entered in purchase form or PayPal account has email'
+            });
+        }
+
+        // ====== Lấy amount ======
+        amount = parseFloat(
+            resource.purchase_units?.[0]?.amount?.value ||
+            resource.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value ||
+            resource.amount?.value ||
+            0
+        );
 
         if (!amount || amount <= 0) {
-            return res.status(400).json({ error: 'Invalid amount' });
+            console.error('❌ Invalid amount:', amount);
+            return res.status(400).json({ error: 'Invalid payment amount' });
         }
 
-        // Tìm gói
+        // ====== Xác định gói license ======
         packageInfo = Object.entries(LICENSE_PACKAGES).find(([price]) => 
-            Math.abs(amount - parseFloat(price)) < 0.01
+            Math.abs(amount - parseFloat(price)) < 0.1 // cho phép sai lệch nhỏ do phí PayPal
         )?.[1];
 
         if (!packageInfo) {
-            return res.status(400).json({ error: 'Unknown package' });
+            console.error(`❌ Unknown amount: $${amount}`);
+            return res.status(400).json({ error: 'Unknown license package' });
         }
 
+        // ====== Tạo và gửi license key ======
         const licenseKey = generateLicenseKey(packageInfo.days);
-        console.log(`🔑 License generated for ${customerEmail} - ${packageInfo.name}`);
+        console.log(`🔑 License key generated for ${customerEmail} - ${packageInfo.name}`);
 
         await sendLicenseEmail(customerEmail, licenseKey, packageInfo.days, amount, packageInfo.name);
 
-        return res.status(200).json({ 
+        console.log(`✅ SUCCESS: License sent to ${customerEmail}`);
+
+        return res.status(200).json({
             success: true,
             email_sent_to: customerEmail,
-            package: packageInfo.name
+            package: packageInfo.name,
+            amount: amount
         });
 
     } catch (error) {
         console.error('❌ Webhook processing error:', error);
-        return res.status(500).json({ error: 'Internal error' });
+        return res.status(500).json({ 
+            error: 'Internal server error',
+            message: error.message 
+        });
     }
 });
 
-// Các endpoint khác giữ nguyên nếu cần (test-email, generate-key...)
+// Endpoint test email
+app.post('/test-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+        
+        console.log(`📧 Sending test email to: ${email}`);
+        
+        const testKey = generateLicenseKey(30);
+        await sendLicenseEmail(email, testKey, 30, 9.9, 'Test Monthly');
+        
+        res.json({ 
+            success: true, 
+            message: 'Test email sent successfully',
+            email: email
+        });
+    } catch (error) {
+        console.error('❌ Error sending test email:', error);
+        res.status(500).json({ 
+            error: 'Failed to send test email',
+            details: error.message 
+        });
+    }
+});
+
+// Endpoint tạo key thủ công
+app.post('/generate-key', async (req, res) => {
+    try {
+        const { email, validDays, amount } = req.body;
+        
+        if (!email || !validDays || !amount) {
+            return res.status(400).json({ 
+                error: 'Missing required fields',
+                required: ['email', 'validDays', 'amount']
+            });
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+        
+        let packageName = `${validDays}-Day`;
+        for (const [price, info] of Object.entries(LICENSE_PACKAGES)) {
+            if (info.days === validDays) {
+                packageName = info.name;
+                break;
+            }
+        }
+        
+        const licenseKey = generateLicenseKey(validDays);
+        await sendLicenseEmail(email, licenseKey, validDays, amount, packageName);
+        
+        console.log(`✅ Manual key generation: ${email}, ${validDays} days`);
+        
+        res.json({ 
+            success: true, 
+            licenseKey,
+            validDays,
+            packageName,
+            email,
+            message: 'License key generated and sent successfully'
+        });
+    } catch (error) {
+        console.error('❌ Error generating key:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate key',
+            details: error.message 
+        });
+    }
+});
+
+// Endpoint packages
+app.get('/packages', (req, res) => {
+    const packages = Object.entries(LICENSE_PACKAGES).map(([price, info]) => ({
+        price: parseFloat(price),
+        ...info
+    }));
+    
+    res.json({
+        success: true,
+        packages: packages,
+        currency: 'USD'
+    });
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+    console.error('💥 Unhandled error:', err);
+    res.status(500).json({ 
+        error: 'Internal server error',
+        message: err.message 
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ 
+        error: 'Not found',
+        path: req.path
+    });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
