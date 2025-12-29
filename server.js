@@ -17,7 +17,7 @@ const LICENSE_PACKAGES = {
     '9.9': { days: 30, name: 'Monthly' },
     '27': { days: 90, name: '3-Month' },
     '51': { days: 180, name: '6-Month' },
-    '90': { days: 360, name: 'Annual' }
+    '93': { days: 360, name: 'Annual' }
 };
 
 // Initialize Resend client
