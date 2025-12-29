@@ -1,7 +1,7 @@
 {
   "Version": "1.0.1",
   "ReleaseDate": "2024-12-29",
-  "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/v1.0.1/BIM9_Pipes_Setup.msi",
+  "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/v1.1.3/BIM9_Pipes_Setup_1.1.3.msi",
   "ReleaseNotes": "🎉 Version 1.0.1\n\n✨ New Features:\n• Automatic update system with smart notifications\n• Enhanced pipe calculation performance (30% faster)\n• New conflict detection tool for MEP systems\n• Advanced export options with detailed reports\n• Dark mode UI improvements\n\n🐛 Bug Fixes:\n• Fixed memory leak in large projects\n• Resolved multi-view synchronization issues\n• Corrected material calculation accuracy\n• Fixed display issues in 4K monitors\n\n🚀 Improvements:\n• Reduced memory footprint by 25%\n• Updated MEP component library\n• Better error messages and logging\n• Improved startup performance",
   "IsMandatory": false
 }
