@@ -503,9 +503,10 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
     console.log('🚀 ========================================');
-    console.log(`🔧 BIM9 Pipes License Generator API v2.4`);
+    console.log('🔧 BIM9 Pipes License Generator API v2.4');
     console.log(`📡 Server running on port ${PORT}`);
     console.log(`🌐 Environment: ${process.env.PAYPAL_MODE || 'sandbox'}`);
     console.log(`📧 Email Provider: Resend SDK (Pure - No Nodemailer)`);
