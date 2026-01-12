@@ -2,23 +2,36 @@ const express = require('express');
 const crypto = require('crypto');
 const { Resend } = require('resend');
 const path = require('path');
+
+// Load environment variables - PHẢI ĐẶT TRƯỚC KHI SỬ DỤNG
 require('dotenv').config();
 
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Encryption key
+// Đọc từ biến môi trường thay vì hardcode
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 const UNIQUE_IDENTIFIER = process.env.UNIQUE_IDENTIFIER;
+const PORT = process.env.PORT || 3000;
+
+// Kiểm tra xem các biến môi trường có tồn tại không
+if (!ENCRYPTION_KEY || !UNIQUE_IDENTIFIER) {
+  console.error('❌ ERROR: Missing required environment variables!');
+  console.error('Please create .env file with ENCRYPTION_KEY and UNIQUE_IDENTIFIER');
+  process.exit(1);
+}
 
 // License packages configuration
 const LICENSE_PACKAGES = {
-    '9.9': { days: 30, name: 'Monthly' },
-    '27': { days: 90, name: '3-Month' },
-    '51': { days: 180, name: '6-Month' },
-    '93': { days: 360, name: 'Annual' }
+  '9.9': { days: 30, name: 'Monthly' },
+  '27': { days: 90, name: '3-Month' },
+  '51': { days: 180, name: '6-Month' },
+  '93': { days: 360, name: 'Annual' }
 };
+
+// ... phần còn lại của code
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_API_KEY);
