@@ -9,8 +9,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Encryption key
-const ENCRYPTION_KEY = '3UYpfxVBCBptt3LL8iLhBzrOw3U0Nl7xtvNUm6eRAbE=';
-const UNIQUE_IDENTIFIER = 'f935afbe-7b90-4006-a557-8fad4007ef63';
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+const UNIQUE_IDENTIFIER = process.env.UNIQUE_IDENTIFIER;
 
 // License packages configuration
 const LICENSE_PACKAGES = {
