@@ -1,6 +1,6 @@
 {
   "Version": "1.2.4",
-  "ReleaseDate": "2026-01-11",
+  "ReleaseDate": "2026-01-25",
   "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/BIM9_Pipes/BIM9_Pipes_Setup.msi",
   "ReleaseNotes": "🎉 Version 1.2.4\n\n✨ New Features:\n• Automatic update system with smart notifications\n•improve check clash feature\n•add new feature delete fitting and reconnect",
   "IsMandatory": false
