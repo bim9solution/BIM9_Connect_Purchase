@@ -1,7 +1,7 @@
 {
-  "Version": "1.4.1",
-  "ReleaseDate": "2026-02-02",
+  "Version": "1.5.2",
+  "ReleaseDate": "2026-02-07",
   "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/BIM9_Pipes/BIM9_Pipes_Setup.msi",
-  "ReleaseNotes": "🎉 Version 1.4.1\n\n✨ New Features:\n• Automatic update system with smart notifications\n•improve check clash feature\n•add new feature delete fitting and reconnect",
+  "ReleaseNotes": "🎉 Version 1.5.2\n\n✨ New Features:\n• Automatic update system with smart notifications\n•Add tag match feature\n•add tag spacing feature",
   "IsMandatory": false
 }
