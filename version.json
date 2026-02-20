@@ -1,7 +1,7 @@
 {
-  "Version": "1.5.2",
-  "ReleaseDate": "2026-02-07",
+  "Version": "1.6.3",
+  "ReleaseDate": "2026-02-20",
   "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/BIM9_Pipes/BIM9_Pipes_Setup.msi",
-  "ReleaseNotes": "🎉 Version 1.5.2\n\n✨ New Features:\n• Automatic update system with smart notifications\n•Add tag match feature\n•add tag spacing feature",
+  "ReleaseNotes": "🎉 Version 1.6.3\n\n✨ New Features:\n• Add pick lines to create pipes and quick check feature",
   "IsMandatory": false
 }
