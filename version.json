@@ -1,7 +1,7 @@
 {
-  "Version": "1.7.5",
-  "ReleaseDate": "2026-02-24",
+  "Version": "1.8.1",
+  "ReleaseDate": "2026-03-01",
   "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/BIM9_Pipes/BIM9_Pipes_Setup.msi",
-  "ReleaseNotes": "🎉 Version 1.7.5\n\n✨ New Features:\n• Add ExportCAD feature to allow users export multi sheets into one CAD file",
+  "ReleaseNotes": "🎉 Version 1.8.1\n\n✨ New Features:\n• improve ExportCAD feature \n• improve CheckClash feature \n• improve CheckFitting feature",
   "IsMandatory": false
 }
