@@ -1,7 +1,9 @@
 {
-  "Version": "1.8.4.0",
+  "Version": "1.9.1",
   "ReleaseDate": "2026-03-01",
   "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/BIM9_Pipes/BIM9_Pipes_Setup.msi",
-  "ReleaseNotes": "🎉 Version 1.8.4.0\n\n✨ New Features:\n• improve ExportCAD feature \n• improve CheckClash feature \n• improve CheckFitting feature \n• Add SearchElements and ScopeBox features",
+  "ReleaseNotes": "🎉 Version 1.9.1\n\n✨ New Features:\n• improve ExportCAD feature \n• improve CheckClash feature \n• improve CheckFitting feature",
+  "\n• Add SearchElements and ScopeBox features",
+  "\n improve CheckClash, CheckFitting, SeachElements to better orientation view",
   "IsMandatory": false
 }
