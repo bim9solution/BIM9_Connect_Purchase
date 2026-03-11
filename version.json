@@ -1,7 +1,7 @@
 {
-  "Version": "1.8.5",
-  "ReleaseDate": "2026-03-09",
+  "Version": "1.8.6",
+  "ReleaseDate": "2026-03-11",
   "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/BIM9_Pipes/BIM9_Pipes_Setup.msi",
-  "ReleaseNotes": "🎉 Version 1.8.5\n\n✨ New Features:\n• improve CheckClash feature\n• improve CheckFitting feature\n• Add SearchElements and ScopeBox features\n• improve CheckClash, CheckFitting, SearchElements to better orientation view",
+  "ReleaseNotes": "🎉 Version 1.8.6\n\n✨ New Features:\n• improve CheckClash feature\n• improve CheckFitting feature\n• Add SearchElements and ScopeBox features\n• improve CheckClash, CheckFitting, SearchElements to better orientation view",
   "IsMandatory": false
 }
