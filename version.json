@@ -1,7 +1,7 @@
 {
-  "Version": "1.8.9",
-  "ReleaseDate": "2026-03-11",
-  "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/BIM9_Pipes/BIM9_Pipes_Setup.msi",
-  "ReleaseNotes": "🎉 Version 1.8.9\n\n✨ New Features:\n• - Enhance: CreateElbow, Align, SetSlope, SearchElements features.\n• - Add new features: Arrange, AutoConnect, RouteAvoid, CadHafttone features",
+  "Version": "2.1.1",
+  "ReleaseDate": "2026-04-18",
+  "DownloadUrl": "https://github.com/bim9solution/BIM9_Pipes_Purchase/releases/download/BIM9_Pipes/BIM9_Connect_Setup.msi",
+  "ReleaseNotes": "Version 2.1.1\n\n New Features:\n• BIM9_Pipes has been upgraded to BIM9_Connect, all features have been upgraded for MEP elements (pipe, duct, cable tray, conduit)",
   "IsMandatory": false
 }
