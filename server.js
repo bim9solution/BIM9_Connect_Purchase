@@ -68,29 +68,39 @@ function signData(data, key) {
     return hmac.digest('base64');
 }
 
-// Verify PayPal Webhooks v2 signature via PayPal API
-async function verifyPayPalWebhook(headers, rawBody) {
+// Shared helper: get PayPal access token
+async function getPayPalAccessToken() {
     const clientId = process.env.PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+    const baseUrl = process.env.PAYPAL_MODE === 'live'
+        ? 'https://api-m.paypal.com'
+        : 'https://api-m.sandbox.paypal.com';
+
+    const res = await fetch(`${baseUrl}/v1/oauth2/token`, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'grant_type=client_credentials'
+    });
+    const { access_token } = await res.json();
+    return { access_token, baseUrl };
+}
+
+// Verify PayPal Webhooks v2 signature via PayPal API
+async function verifyPayPalWebhook(headers, rawBody) {
     const webhookId = process.env.PAYPAL_WEBHOOK_ID;
 
-    if (!clientId || !clientSecret || !webhookId) {
+    if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET || !webhookId) {
         console.warn('⚠️  Webhook signature verification skipped — set PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID to enable');
         return true;
     }
 
     try {
-        const authRes = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: 'grant_type=client_credentials'
-        });
-        const { access_token } = await authRes.json();
+        const { access_token, baseUrl } = await getPayPalAccessToken();
 
-        const verifyRes = await fetch('https://api-m.paypal.com/v1/notifications/verify-webhook-signature', {
+        const verifyRes = await fetch(`${baseUrl}/v1/notifications/verify-webhook-signature`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${access_token}`,
@@ -449,6 +459,41 @@ app.post('/webhook/paypal', async (req, res) => {
         console.error('❌ ========== ERROR PROCESSING NOTIFICATION ==========');
         console.error('❌ Error:', error);
         console.error('❌ Stack:', error.stack);
+        return res.status(500).json({ error: 'Internal server error', message: error.message });
+    }
+});
+
+// Capture PayPal order — called from frontend after Hosted Fields card payment
+app.post('/capture', async (req, res) => {
+    try {
+        const { orderID } = req.body;
+        if (!orderID) return res.status(400).json({ error: 'Missing orderID' });
+
+        if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+            return res.status(500).json({ error: 'PayPal credentials not configured — set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET' });
+        }
+
+        console.log(`💳 Capturing card payment for order: ${orderID}`);
+        const { access_token, baseUrl } = await getPayPalAccessToken();
+
+        const captureRes = await fetch(`${baseUrl}/v2/checkout/orders/${orderID}/capture`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const captureData = await captureRes.json();
+
+        if (captureData.status === 'COMPLETED') {
+            console.log(`✅ Card payment captured successfully: ${orderID}`);
+            return res.json({ status: 'success', orderID });
+        } else {
+            console.error('❌ Capture failed:', JSON.stringify(captureData));
+            return res.status(400).json({ error: 'Capture failed', details: captureData });
+        }
+    } catch (error) {
+        console.error('❌ Capture error:', error.message);
         return res.status(500).json({ error: 'Internal server error', message: error.message });
     }
 });

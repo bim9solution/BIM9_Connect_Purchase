@@ -271,6 +271,98 @@
             color: #667eea;
         }
         
+        .card-pay-trigger {
+            width: 100%;
+            padding: 10px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s;
+        }
+        .card-pay-trigger:hover { background: #667eea; color: white; }
+
+        .card-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.65);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .card-modal-box {
+            background: white;
+            max-width: 440px;
+            margin: 40px auto;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .card-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-modal-header h3 { margin: 0; font-size: 1.2em; }
+        .card-modal-header p { margin: 5px 0 0; opacity: 0.9; font-size: 0.9em; }
+        .card-modal-close {
+            background: none; border: none; color: white;
+            font-size: 1.5em; cursor: pointer; line-height: 1;
+        }
+        .card-modal-body { padding: 25px; }
+        .card-field-label {
+            display: block; font-size: 13px; color: #555;
+            margin-bottom: 5px; font-weight: 600;
+        }
+        .card-hosted-field {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 10px 12px;
+            height: 42px;
+            margin-bottom: 14px;
+            transition: border-color 0.3s;
+        }
+        .card-hosted-field.braintree-hosted-fields-focused { border-color: #667eea; }
+        .card-hosted-field.braintree-hosted-fields-invalid { border-color: #dc3545; }
+        .card-name-input {
+            width: 100%; padding: 10px 12px;
+            border: 2px solid #ddd; border-radius: 5px;
+            font-size: 15px; margin-bottom: 14px;
+            box-sizing: border-box; transition: border-color 0.3s;
+        }
+        .card-name-input:focus { outline: none; border-color: #667eea; }
+        .card-row { display: flex; gap: 12px; }
+        .card-row > div { flex: 1; }
+        .card-submit-btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: opacity 0.2s;
+        }
+        .card-submit-btn:hover { opacity: 0.9; }
+        .card-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .card-modal-error {
+            background: #fee; color: #c33;
+            padding: 10px; border-radius: 5px;
+            margin-bottom: 14px; display: none; font-size: 14px;
+        }
+        .card-not-available {
+            background: #fff3cd; color: #856404;
+            padding: 10px; border-radius: 5px;
+            font-size: 13px; display: none; margin-top: 8px;
+        }
+
         @media (max-width: 768px) {
             .pricing-cards {
                 grid-template-columns: 1fr;
@@ -364,8 +456,10 @@
                 </div>
                 
                 <div class="paypal-button-container" id="paypal-button-monthly"></div>
+                <button class="card-pay-trigger" onclick="openCardModal('email-monthly', 'error-monthly', '9.90', 'BIM9 Pipes - Monthly License (30 days)', 'Monthly License')">💳 Pay with Card</button>
+                <div class="card-not-available" id="card-na-monthly">⚠️ Card payment unavailable. Please use PayPal.</div>
             </div>
-            
+
             <!-- 3-Month Plan -->
             <div class="pricing-card">
                 <div class="plan-name">📅 3-Month</div>
@@ -391,8 +485,10 @@
                 </div>
                 
                 <div class="paypal-button-container" id="paypal-button-3month"></div>
+                <button class="card-pay-trigger" onclick="openCardModal('email-3month', 'error-3month', '27.00', 'BIM9 Pipes - 3-Month License (90 days)', '3-Month License')">💳 Pay with Card</button>
+                <div class="card-not-available" id="card-na-3month">⚠️ Card payment unavailable. Please use PayPal.</div>
             </div>
-            
+
             <!-- 6-Month Plan -->
             <div class="pricing-card recommended">
                 <div class="plan-name">🔥 6-Month</div>
@@ -418,8 +514,10 @@
                 </div>
                 
                 <div class="paypal-button-container" id="paypal-button-6month"></div>
+                <button class="card-pay-trigger" onclick="openCardModal('email-6month', 'error-6month', '51.00', 'BIM9 Pipes - 6-Month License (180 days)', '6-Month License')">💳 Pay with Card</button>
+                <div class="card-not-available" id="card-na-6month">⚠️ Card payment unavailable. Please use PayPal.</div>
             </div>
-            
+
             <!-- Annual Plan -->
             <div class="pricing-card popular">
                 <div class="plan-name">⭐ Annual</div>
@@ -445,6 +543,8 @@
                 </div>
                 
                 <div class="paypal-button-container" id="paypal-button-annual"></div>
+                <button class="card-pay-trigger" onclick="openCardModal('email-annual', 'error-annual', '93.00', 'BIM9 Pipes - Annual License (360 days)', 'Annual License')">💳 Pay with Card</button>
+                <div class="card-not-available" id="card-na-annual">⚠️ Card payment unavailable. Please use PayPal.</div>
             </div>
         </div>
         
@@ -480,8 +580,46 @@
         </div>
     </div>
     
-    <!-- PayPal SDK -->
-    <script src="https://www.paypal.com/sdk/js?client-id=AdTL1dLX38aLKkYCF65iwtvugxIGLZTjiWf6TnKnLh2OIXZVmc0gYwGeM8EhacAgWPyf522ls1vmlOv5&currency=USD"></script>
+    <!-- Card Payment Modal -->
+    <div class="card-modal-overlay" id="card-modal">
+        <div class="card-modal-box">
+            <div class="card-modal-header">
+                <div>
+                    <h3>💳 Pay with Card</h3>
+                    <p id="modal-plan-label">Visa / Mastercard / Amex accepted</p>
+                </div>
+                <button class="card-modal-close" onclick="closeCardModal()">✕</button>
+            </div>
+            <div class="card-modal-body">
+                <div class="card-modal-error" id="card-modal-error"></div>
+
+                <label class="card-field-label">Cardholder Name</label>
+                <input type="text" class="card-name-input" id="modal-card-name" placeholder="John Doe" autocomplete="cc-name">
+
+                <label class="card-field-label">Card Number</label>
+                <div class="card-hosted-field" id="modal-card-number"></div>
+
+                <div class="card-row">
+                    <div>
+                        <label class="card-field-label">Expiry Date</label>
+                        <div class="card-hosted-field" id="modal-card-expiry"></div>
+                    </div>
+                    <div>
+                        <label class="card-field-label">CVV</label>
+                        <div class="card-hosted-field" id="modal-card-cvv"></div>
+                    </div>
+                </div>
+
+                <button class="card-submit-btn" id="modal-pay-btn" onclick="submitCardPayment()">
+                    💳 Pay Now
+                </button>
+                <p style="text-align:center; font-size:11px; color:#999; margin-top:10px;">🔒 Secured by PayPal</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PayPal SDK with Hosted Fields for card payments -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AdTL1dLX38aLKkYCF65iwtvugxIGLZTjiWf6TnKnLh2OIXZVmc0gYwGeM8EhacAgWPyf522ls1vmlOv5&currency=USD&components=buttons,hosted-fields&intent=capture"></script>
     
     <script>
         // Validate email
@@ -559,6 +697,136 @@
         createPayPalButton('paypal-button-3month', 'email-3month', 'error-3month', '27.00', 'BIM9 Pipes - 3-Month License (90 days)');
         createPayPalButton('paypal-button-6month', 'email-6month', 'error-6month', '51.00', 'BIM9 Pipes - 6-Month License (180 days)');
         createPayPalButton('paypal-button-annual', 'email-annual', 'error-annual', '93.00', 'BIM9 Pipes - Annual License (360 days)');
+
+        // ===== PayPal Hosted Fields (Card Payment) =====
+        let selectedCardPlan = null;
+        let hostedFieldsInstance = null;
+
+        function openCardModal(emailInputId, errorId, amount, description, planLabel) {
+            const email = document.getElementById(emailInputId).value.trim();
+            const errorDiv = document.getElementById(errorId);
+
+            if (!email) {
+                errorDiv.textContent = '⚠️ Please enter your email address first';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            if (!isValidEmail(email)) {
+                errorDiv.textContent = '⚠️ Please enter a valid email address';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            errorDiv.style.display = 'none';
+
+            if (!hostedFieldsInstance) {
+                alert('⚠️ Card payment is loading. Please try again in a moment.');
+                return;
+            }
+
+            selectedCardPlan = { emailInputId, amount, description };
+            document.getElementById('modal-plan-label').textContent = planLabel + ' — $' + parseFloat(amount).toFixed(2);
+            document.getElementById('modal-pay-btn').textContent = '💳 Pay $' + parseFloat(amount).toFixed(2);
+            document.getElementById('modal-pay-btn').disabled = false;
+            document.getElementById('card-modal-error').style.display = 'none';
+            document.getElementById('modal-card-name').value = '';
+            document.getElementById('card-modal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCardModal() {
+            document.getElementById('card-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        async function submitCardPayment() {
+            if (!hostedFieldsInstance || !selectedCardPlan) return;
+
+            const btn = document.getElementById('modal-pay-btn');
+            const errorDiv = document.getElementById('card-modal-error');
+            const cardName = document.getElementById('modal-card-name').value.trim();
+
+            if (!cardName) {
+                errorDiv.textContent = '⚠️ Please enter cardholder name';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+            errorDiv.style.display = 'none';
+
+            try {
+                const payload = await hostedFieldsInstance.submit({ cardholderName: cardName });
+
+                const captureRes = await fetch('/capture', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderID: payload.orderId })
+                });
+
+                if (captureRes.ok) {
+                    const email = document.getElementById(selectedCardPlan.emailInputId).value.trim();
+                    closeCardModal();
+                    alert('✅ Payment Successful!\n\nYour license key will be sent to:\n' + email + '\n\nPlease check your inbox (and spam folder) in the next few minutes.\n\nThank you for your purchase! 🎉');
+                } else {
+                    const errData = await captureRes.json();
+                    throw new Error(errData.error || 'Capture failed');
+                }
+            } catch (err) {
+                console.error('Card payment error:', err);
+                errorDiv.textContent = '❌ ' + (err.message || 'Payment failed. Please check your card details and try again.');
+                errorDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = '💳 Pay $' + parseFloat(selectedCardPlan.amount).toFixed(2);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('card-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeCardModal();
+        });
+
+        // Initialize Hosted Fields after page loads
+        window.addEventListener('load', function() {
+            if (!paypal.HostedFields || !paypal.HostedFields.isEligible()) {
+                console.warn('PayPal HostedFields not eligible — hiding card buttons');
+                document.querySelectorAll('.card-pay-trigger').forEach(function(btn) {
+                    btn.style.display = 'none';
+                });
+                document.querySelectorAll('.card-not-available').forEach(function(el) {
+                    el.style.display = 'block';
+                });
+                return;
+            }
+
+            paypal.HostedFields.render({
+                createOrder: function(data, actions) {
+                    if (!selectedCardPlan) return Promise.reject(new Error('No plan selected'));
+                    const email = document.getElementById(selectedCardPlan.emailInputId).value.trim();
+                    return actions.order.create({
+                        purchase_units: [{
+                            description: selectedCardPlan.description,
+                            amount: { value: selectedCardPlan.amount },
+                            custom_id: email
+                        }],
+                        application_context: { shipping_preference: 'NO_SHIPPING' }
+                    });
+                },
+                fields: {
+                    number: { selector: '#modal-card-number', placeholder: '•••• •••• •••• ••••' },
+                    expirationDate: { selector: '#modal-card-expiry', placeholder: 'MM/YY' },
+                    cvv: { selector: '#modal-card-cvv', placeholder: '•••' }
+                }
+            }).then(function(hf) {
+                hostedFieldsInstance = hf;
+                console.log('✅ PayPal Hosted Fields ready');
+            }).catch(function(err) {
+                console.error('Failed to initialize Hosted Fields:', err);
+                document.querySelectorAll('.card-pay-trigger').forEach(function(btn) {
+                    btn.style.display = 'none';
+                });
+            });
+        });
     </script>
 </body>
 </html>
