@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIM9 Pipes - Purchase License</title>
+    <title>BIM9 Connect - Purchase License</title>
     <style>
         * {
             margin: 0;
@@ -381,7 +381,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔧 BIM9 Pipes</h1>
+            <h1>🔧 BIM9 Connect</h1>
             <p>Professional Piping Solutions for Autodesk Revit</p>
             <p style="font-size: 0.9em; margin-top: 10px;">Choose your license plan and start designing today!</p>
         </div>
@@ -456,7 +456,7 @@
                 </div>
                 
                 <div class="paypal-button-container" id="paypal-button-monthly"></div>
-                <button class="card-pay-trigger" onclick="openCardModal('email-monthly', 'error-monthly', '9.90', 'BIM9 Pipes - Monthly License (30 days)', 'Monthly License')">💳 Pay with Card</button>
+                <button class="card-pay-trigger" onclick="openCardModal('email-monthly', 'error-monthly', '9.90', 'BIM9 Connect - Monthly License (30 days)', 'Monthly License')">💳 Pay with Card</button>
                 <div class="card-not-available" id="card-na-monthly">⚠️ Card payment unavailable. Please use PayPal.</div>
             </div>
 
@@ -485,7 +485,7 @@
                 </div>
                 
                 <div class="paypal-button-container" id="paypal-button-3month"></div>
-                <button class="card-pay-trigger" onclick="openCardModal('email-3month', 'error-3month', '27.00', 'BIM9 Pipes - 3-Month License (90 days)', '3-Month License')">💳 Pay with Card</button>
+                <button class="card-pay-trigger" onclick="openCardModal('email-3month', 'error-3month', '27.00', 'BIM9 Connect - 3-Month License (90 days)', '3-Month License')">💳 Pay with Card</button>
                 <div class="card-not-available" id="card-na-3month">⚠️ Card payment unavailable. Please use PayPal.</div>
             </div>
 
@@ -514,7 +514,7 @@
                 </div>
                 
                 <div class="paypal-button-container" id="paypal-button-6month"></div>
-                <button class="card-pay-trigger" onclick="openCardModal('email-6month', 'error-6month', '51.00', 'BIM9 Pipes - 6-Month License (180 days)', '6-Month License')">💳 Pay with Card</button>
+                <button class="card-pay-trigger" onclick="openCardModal('email-6month', 'error-6month', '51.00', 'BIM9 Connect - 6-Month License (180 days)', '6-Month License')">💳 Pay with Card</button>
                 <div class="card-not-available" id="card-na-6month">⚠️ Card payment unavailable. Please use PayPal.</div>
             </div>
 
@@ -543,7 +543,7 @@
                 </div>
                 
                 <div class="paypal-button-container" id="paypal-button-annual"></div>
-                <button class="card-pay-trigger" onclick="openCardModal('email-annual', 'error-annual', '93.00', 'BIM9 Pipes - Annual License (360 days)', 'Annual License')">💳 Pay with Card</button>
+                <button class="card-pay-trigger" onclick="openCardModal('email-annual', 'error-annual', '93.00', 'BIM9 Connect - Annual License (360 days)', 'Annual License')">💳 Pay with Card</button>
                 <div class="card-not-available" id="card-na-annual">⚠️ Card payment unavailable. Please use PayPal.</div>
             </div>
         </div>
@@ -554,7 +554,7 @@
             <p><strong>2. Choose Your Plan:</strong> Select the plan that works best for you</p>
             <p><strong>3. Complete Payment:</strong> Secure payment via PayPal (credit/debit cards accepted)</p>
             <p><strong>4. Receive License Key:</strong> Your license key will be automatically sent to your email within 2-5 minutes</p>
-            <p><strong>5. Activate in Revit:</strong> Copy the license key and paste it in BIM9 Pipes to activate</p>
+            <p><strong>5. Activate in Revit:</strong> Copy the license key and paste it in BIM9 Connect to activate</p>
             
             <h2 style="margin-top: 30px;">💡 Frequently Asked Questions</h2>
             <p><strong>Q: When will I receive my license key?</strong><br>
@@ -570,7 +570,7 @@
             A: No refunds after license key delivery. Please try the free trial first!</p>
             
             <h2 style="margin-top: 30px;">🆘 Need Help?</h2>
-            <p>Contact us at: <strong>contact@bim9pipes.com</strong></p>
+            <p>Contact us at: <strong>contact@bim9connect.com</strong></p>
             <ul>
                 <li>License keys are delivered automatically via email</li>
                 <li>Keys are valid from the moment of purchase</li>
@@ -693,10 +693,10 @@
 }
         
         // Initialize all PayPal buttons
-        createPayPalButton('paypal-button-monthly', 'email-monthly', 'error-monthly', '9.90', 'BIM9 Pipes - Monthly License (30 days)');
-        createPayPalButton('paypal-button-3month', 'email-3month', 'error-3month', '27.00', 'BIM9 Pipes - 3-Month License (90 days)');
-        createPayPalButton('paypal-button-6month', 'email-6month', 'error-6month', '51.00', 'BIM9 Pipes - 6-Month License (180 days)');
-        createPayPalButton('paypal-button-annual', 'email-annual', 'error-annual', '93.00', 'BIM9 Pipes - Annual License (360 days)');
+        createPayPalButton('paypal-button-monthly', 'email-monthly', 'error-monthly', '9.90', 'BIM9 Connect - Monthly License (30 days)');
+        createPayPalButton('paypal-button-3month', 'email-3month', 'error-3month', '27.00', 'BIM9 Connect - 3-Month License (90 days)');
+        createPayPalButton('paypal-button-6month', 'email-6month', 'error-6month', '51.00', 'BIM9 Connect - 6-Month License (180 days)');
+        createPayPalButton('paypal-button-annual', 'email-annual', 'error-annual', '93.00', 'BIM9 Connect - Annual License (360 days)');
 
         // ===== PayPal Hosted Fields (Card Payment) =====
         let selectedCardPlan = null;

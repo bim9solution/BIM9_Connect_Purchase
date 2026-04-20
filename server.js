@@ -173,7 +173,7 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
 </head>
 <body>
     <div class="header">
-        <h1>🔧 BIM9 Pipes License</h1>
+        <h1>🔧 BIM9 Connect License</h1>
         <p>Thank you for your purchase!</p>
     </div>
     <div class="content">
@@ -194,16 +194,16 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
         <h3 style="color: #667eea;">🚀 Activation Instructions:</h3>
         <ol>
             <li><strong>Open Autodesk Revit</strong> on your computer</li>
-            <li><strong>Launch BIM9 Pipes</strong> from the Add-ins tab</li>
+            <li><strong>Launch BIM9 Connect</strong> from the Add-ins tab</li>
             <li>When prompted, <strong>enter the license key</strong> above</li>
             <li>Click <strong>"Activate"</strong> to unlock all features</li>
         </ol>
         <h3 style="color: #667eea;">💡 Need Help?</h3>
-        <p>Contact: <strong>support@bim9pipes.com</strong></p>
+        <p>Contact: <strong>support@bim9connect.com</strong></p>
     </div>
     <div class="footer">
-        <p><strong>BIM9 Pipes</strong> - Professional Piping Solutions for Revit</p>
-        <p>© 2025 BIM9 Pipes. All rights reserved.</p>
+        <p><strong>BIM9 Connect</strong> - Professional Piping Solutions for Revit</p>
+        <p>© 2025 BIM9 Connect. All rights reserved.</p>
     </div>
 </body>
 </html>
@@ -219,7 +219,7 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
         const data = await resend.emails.send({
             from: fromEmail,
             to: [recipientEmail],
-            subject: '🎉 Your BIM9 Pipes License Key - Activation Instructions',
+            subject: '🎉 Your BIM9 Connect License Key - Activation Instructions',
             html: htmlContent
         });
 
@@ -243,7 +243,7 @@ async function sendLicenseEmail(recipientEmail, licenseKey, validDays, amount, p
 // Health check endpoint
 app.get('/', (_req, res) => {
     res.json({
-        status: 'BIM9 Pipes License Generator API is running',
+        status: 'BIM9 Connect License Generator API is running',
         version: '2.5.0',
         email_provider: 'Resend SDK',
         resend_configured: !!(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL),
@@ -611,7 +611,7 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
     console.log('🚀 ========================================');
-    console.log('🔧 BIM9 Pipes License Generator API v2.5.0');
+    console.log('🔧 BIM9 Connect License Generator API v2.5.0');
     console.log(`📡 Server running on port ${PORT}`);
     console.log(`🌐 Environment: ${process.env.PAYPAL_MODE || 'sandbox'}`);
     console.log(`📧 Email Provider: Resend SDK`);
