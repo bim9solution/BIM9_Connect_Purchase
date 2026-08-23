@@ -1,0 +1,7 @@
+{
+  "Version": "2.5.5",
+  "ReleaseDate": "2026-06-07",
+  "DownloadUrl": "https://github.com/bim9solution/BIM9_Connect_Purchase/releases/download/BIM9_Connect/BIM9_Connect_Setup.msi",
+  "ReleaseNotes": "Version 2.5.5\n\nNew Features & Improvements:\n• Add Break feature allow user to break a MEP curve by pick 3 points.\n• Add ParaConnect2 allow to connect two parallel pipes with 2 tees 45 degree.\n• Add CrossConnect allow user to connect 2 cross pipes with 2 tees.\n\n---\n\nVersion 2.5.1\n\nNew Features & Improvements:\n• Add Colinear Connect feature to ElbowConnect pulldown button.\n• Add OpenInPlanView feature to View pulldown button.\n• Enhance CheckClash, CheckFitting, and SearchElements features.\n\n---\n\nVersion 2.4.5\n\nNew Features & Improvements:\n• Enhance CheckClash for efficient coordinate work.",
+  "IsMandatory": false
+}
